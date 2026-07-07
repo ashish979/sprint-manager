@@ -15,8 +15,9 @@ An in-house replacement for **Geekbot** (async daily standups) and **Rotation.ap
 | Schedule: weekdays at HH:MM **in each participant's local timezone** | ✅ | Arbitrary cron, biweekly |
 | Prompt each participant via Slack DM at their local time | ✅ | |
 | Collect answers via a Block Kit **modal** (one form, all questions) | ✅ | Conversational one-question-at-a-time flow |
-| Broadcast formatted report to a public/private channel as answers arrive | ✅ | Digest mode (one combined post) |
-| Reminder nudge if no response after N hours; auto-close at end of day | ✅ | |
+| Daily **anchor message** in the broadcast channel when the standup opens; each person's answers posted as **replies in its thread** | ✅ | |
+| Anchor message live-updates with response status (✅ 4/6 responded, ⏳ waiting on @x, @y) | ✅ | |
+| **Configurable reminders**: nudge DM after N minutes/hours without a response, up to M reminders; auto-close and mark missed at a configurable cutoff | ✅ | Escalate unanswered to manager DM |
 | Dashboard: reports by date/person, blocker highlighting | ✅ | Participation streaks, mood trends, export |
 | Vacation/skip ("not today") | ✅ | Slack status / OOO auto-detection |
 
@@ -80,8 +81,9 @@ flowchart LR
 |---|---|---|---|
 | Team settings | `TEAM` | `SETTINGS` | Workspace id, admin Slack ids |
 | User | `USER#<slackId>` | `PROFILE` | Timezone (synced from Slack), availability days |
-| Standup | `STANDUP#<id>` | `CONFIG` | Questions[], schedule, participants[], broadcast channel |
-| Report (one per person per day) | `STANDUP#<id>` | `REPORT#<date>#<slackId>` | Answers[], status (pending/submitted/skipped), posted message ts |
+| Standup | `STANDUP#<id>` | `CONFIG` | Questions[], schedule, participants[], broadcast channel, reminder config (`remindAfter`, `maxReminders`, `closeAt`) |
+| Standup day | `STANDUP#<id>` | `DAY#<date>` | Anchor message `thread_ts`, response tally, open/closed |
+| Report (one per person per day) | `STANDUP#<id>` | `REPORT#<date>#<slackId>` | Answers[], status (pending/submitted/skipped/missed), reminders sent, thread reply ts |
 | Rotation | `ROTA#<id>` | `CONFIG` | Members[], cadence, channel, Slack usergroup id |
 | Shift | `ROTA#<id>` | `SHIFT#<startDate>` | Assignee, source (auto/override/swap) |
 | GSI1 | `DUE#<yyyy-mm-dd-hh-mm>` | entity ref | Lets the tick Lambda query "what's due now" in one read |
@@ -90,10 +92,12 @@ Data volume is tiny (a few KB per report, per shift) — years of history fits i
 
 ### 2.3 Standup flow (happy path)
 
-1. Tick Lambda finds `DUE` items → DMs each participant: intro + **"Answer standup"** button.
-2. Button opens a Block Kit modal with all questions; submit → interactivity endpoint validates, writes `REPORT`, posts/updates the formatted report in the broadcast channel.
-3. No answer by reminder time → one nudge DM. End of day → report marked `missed`.
+1. Tick Lambda finds `DUE` items → posts the day's **anchor message** in the broadcast channel ("🌅 Daily standup for Tue, Jul 7 — waiting on @a @b @c…") and stores its `thread_ts` on the day record, then DMs each participant: intro + **"Answer standup"** button.
+2. Button opens a Block Kit modal with all questions; submit → interactivity endpoint validates, writes `REPORT`, posts the person's formatted answers **as a threaded reply under the anchor message**, and edits the anchor to reflect who's responded.
+3. **Reminders (per-standup config)**: if no response after `remindAfter` (default 2 h), the tick Lambda sends a nudge DM; repeats up to `maxReminders` (default 2). At `closeAt` (default end of participant's local day) the report is marked `missed` and the anchor gets a final summary edit.
 4. Dashboard reads reports by standup/date; blockers (non-empty Q3) are flagged red and can optionally ping the manager.
+
+Threading keeps the channel to one message per standup per day while the full detail lives in the thread — same model Geekbot uses, and it makes each day's standup trivially linkable.
 
 ### 2.4 Rotation flow
 
