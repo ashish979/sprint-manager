@@ -1,0 +1,116 @@
+/// <reference path="./.sst/platform/config.d.ts" />
+
+/**
+ * Sprint Manager infrastructure (see PLAN.md §2–§4).
+ *
+ * One SST app: Next.js site (dashboard + API + Slack webhooks), a single
+ * DynamoDB table, a 15-minute EventBridge tick, and Slack secrets.
+ * Everything is sized to stay inside AWS always-free tiers.
+ */
+
+// Receives AWS Budget alerts at $3 and $5 (prod only).
+const BUDGET_ALERT_EMAIL = "vikasahu09@gmail.com";
+
+export default $config({
+  app(input) {
+    return {
+      name: "sprint-manager",
+      removal: input?.stage === "prod" ? "retain" : "remove",
+      protect: ["prod"].includes(input?.stage),
+      home: "aws",
+      providers: {
+        aws: { region: "ap-south-1" },
+      },
+    };
+  },
+  async run() {
+    // Single-table design (PLAN.md §2.2). GSI1 serves the "what's due now"
+    // query: gsi1pk = DUE#<yyyy-mm-dd-hh-mm>.
+    const table = new sst.aws.Dynamo("Table", {
+      fields: {
+        pk: "string",
+        sk: "string",
+        gsi1pk: "string",
+        gsi1sk: "string",
+      },
+      primaryIndex: { hashKey: "pk", rangeKey: "sk" },
+      globalIndexes: {
+        GSI1: { hashKey: "gsi1pk", rangeKey: "gsi1sk" },
+      },
+      transform: {
+        table: (args) => {
+          // Provisioned 5/5 (+5/5 on the GSI) stays inside the always-free
+          // 25 RCU/25 WCU; the default on-demand mode is billed per request.
+          args.billingMode = "PROVISIONED";
+          args.readCapacity = 5;
+          args.writeCapacity = 5;
+          args.globalSecondaryIndexes = [
+            {
+              name: "GSI1",
+              hashKey: "gsi1pk",
+              rangeKey: "gsi1sk",
+              projectionType: "ALL",
+              readCapacity: 5,
+              writeCapacity: 5,
+            },
+          ];
+        },
+      },
+    });
+
+    // Set after deploy with: sst secret set <name> <value> [--stage prod]
+    const slackSigningSecret = new sst.Secret("SlackSigningSecret");
+    const slackBotToken = new sst.Secret("SlackBotToken");
+
+    // Idempotent scheduler sweep: standup prompts, reminders, shift rollovers.
+    new sst.aws.Cron("Tick", {
+      schedule: "rate(15 minutes)",
+      function: {
+        handler: "functions/tick.handler",
+        link: [table, slackSigningSecret, slackBotToken],
+        timeout: "60 seconds",
+        // Guardrail: a runaway tick can never fan out.
+        concurrency: { reserved: 1 },
+        logging: { retention: "2 weeks" },
+      },
+    });
+
+    const site = new sst.aws.Nextjs("Site", {
+      link: [table, slackSigningSecret, slackBotToken],
+      server: {
+        logging: { retention: "2 weeks" },
+      },
+    });
+
+    // Cost guardrail (PLAN.md §4): alert at $3 and $5 actual spend.
+    if ($app.stage === "prod") {
+      new aws.budgets.Budget("MonthlyCostBudget", {
+        budgetType: "COST",
+        timeUnit: "MONTHLY",
+        limitAmount: "5",
+        limitUnit: "USD",
+        notifications: [
+          {
+            notificationType: "ACTUAL",
+            comparisonOperator: "GREATER_THAN",
+            threshold: 60, // $3 of the $5 limit
+            thresholdType: "PERCENTAGE",
+            subscriberEmailAddresses: [BUDGET_ALERT_EMAIL],
+          },
+          {
+            notificationType: "ACTUAL",
+            comparisonOperator: "GREATER_THAN",
+            threshold: 100, // $5
+            thresholdType: "PERCENTAGE",
+            subscriberEmailAddresses: [BUDGET_ALERT_EMAIL],
+          },
+        ],
+      });
+    }
+
+    return {
+      url: site.url,
+      table: table.name,
+    };
+  },
+});
