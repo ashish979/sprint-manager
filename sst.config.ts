@@ -9,7 +9,7 @@
  */
 
 // Receives AWS Budget alerts at $3 and $5 (prod only).
-const BUDGET_ALERT_EMAIL = "vikasahu09@gmail.com";
+const BUDGET_ALERT_EMAIL = "ashish.agrawal@josys.com";
 
 export default $config({
   app(input) {
@@ -19,7 +19,7 @@ export default $config({
       protect: ["prod"].includes(input?.stage),
       home: "aws",
       providers: {
-        aws: { region: "ap-south-1" },
+        aws: { region: "ap-northeast-1" },
       },
     };
   },
