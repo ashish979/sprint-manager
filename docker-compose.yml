@@ -1,0 +1,16 @@
+# Local development only: DynamoDB Local on :8000 (no AWS account needed).
+# Usage: docker compose up -d && npm run db:local
+services:
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: sprint-manager-dynamodb
+    # root: the named volume is root-owned; the image's default user can't
+    # write to it (SQLite "unable to open database file", requests hang)
+    user: root
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath /home/dynamodblocal/data
+    ports:
+      - "8000:8000"
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data
+volumes:
+  dynamodb-data:

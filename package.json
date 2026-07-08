@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:local": "node scripts/local-db.mjs",
+    "tick": "node --env-file=.env.local --import tsx scripts/run-tick.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1081.0",
@@ -28,6 +30,7 @@
     "eslint-config-next": "15.5.20",
     "sst": "^3.19.3",
     "tailwindcss": "^4",
+    "tsx": "^4.23.0",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }

@@ -79,7 +79,9 @@ export default $config({
 
     // Idempotent scheduler sweep: standup prompts, reminders, shift rollovers.
     new sst.aws.Cron("Tick", {
-      schedule: "rate(15 minutes)",
+      // Quarter-hour aligned (not rate()) so ticks land on :00/:15/:30/:45,
+      // matching the 15-minute increments standup times are restricted to.
+      schedule: "cron(0/15 * * * ? *)",
       function: {
         handler: "functions/tick.handler",
         link: [table],

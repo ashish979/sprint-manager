@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { auth, signIn, signOut } from "@/auth";
 
 // Session-dependent; never prerender (also keeps builds env-free).
@@ -19,6 +21,9 @@ export default async function Home() {
             Signed in as <strong>{session.user.name}</strong>
             {session.isAdmin ? " · admin" : ""}
           </p>
+          <Link href="/standups" className="text-sm underline">
+            Go to standups →
+          </Link>
           <form
             action={async () => {
               "use server";
@@ -43,7 +48,7 @@ export default async function Home() {
         </form>
       )}
 
-      <p className="text-sm text-gray-400">Phase 1 · Slack app + auth</p>
+      <p className="text-sm text-gray-400">Phase 2 · standups MVP</p>
     </main>
   );
 }
