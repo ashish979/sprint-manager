@@ -9,7 +9,7 @@
  */
 
 // Receives AWS Budget alerts at $3 and $5 (prod only).
-const BUDGET_ALERT_EMAIL = "vikasahu09@gmail.com";
+const BUDGET_ALERT_EMAIL = "ashish.agrawal@josys.com";
 
 export default $config({
   app(input) {
