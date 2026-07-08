@@ -58,6 +58,18 @@ Slack-first, admin web dashboard, hard cost ceiling $5/month on AWS.
    /rota, real sign-in all need ngrok or the deployed URL. User chose no-tunnel for now;
    moving to AWS (`sst dev`) later.
 
+### Slack integration status (verified live 2026-07-08)
+
+- Slack app **sprint_manager** created from scratch in the org's **JOSYS** workspace
+  (bot scopes: chat:write, im:write, users:read; installed, token in user's .env.local)
+- Outbound loop confirmed working end-to-end locally: dashboard create → Start now →
+  real DM prompt + channel anchor message received. User = U07QGT22ZUL (DEV_USER +
+  sole test participant).
+- Inbound (Answer/Skip buttons, modal, /rota, OAuth sign-in) intentionally not wired:
+  user chose no tunnel; unlocks with AWS deploy/`sst dev`. The Slack app still needs
+  redirect URL, interactivity URL, slash command + remaining scopes from
+  slack-manifest.yml when a public URL exists.
+
 ### Next steps
 
 1. User pushes `phase-2-standups`, merges PRs (phase-1 first or together)
