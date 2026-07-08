@@ -15,6 +15,8 @@ declare module "next-auth" {
   interface Session {
     slackUserId?: string;
     isAdmin: boolean;
+    /** True for the DEV_USER synthetic session (see src/lib/session.ts). */
+    isDev?: boolean;
   }
 }
 

@@ -1,10 +1,13 @@
-import { auth, signIn, signOut } from "@/auth";
+import Link from "next/link";
+
+import { signIn, signOut } from "@/auth";
+import { getSession } from "@/lib/session";
 
 // Session-dependent; never prerender (also keeps builds env-free).
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const session = await auth();
+  const session = await getSession();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
@@ -19,16 +22,25 @@ export default async function Home() {
             Signed in as <strong>{session.user.name}</strong>
             {session.isAdmin ? " · admin" : ""}
           </p>
-          <form
-            action={async () => {
-              "use server";
-              await signOut();
-            }}
-          >
-            <button className="rounded border px-4 py-2 text-sm hover:bg-gray-50">
-              Sign out
-            </button>
-          </form>
+          <Link href="/standups" className="text-sm underline">
+            Go to standups →
+          </Link>
+          {session.isDev ? (
+            <p className="text-xs text-amber-600">
+              dev session via DEV_USER — no Slack sign-in
+            </p>
+          ) : (
+            <form
+              action={async () => {
+                "use server";
+                await signOut();
+              }}
+            >
+              <button className="rounded border px-4 py-2 text-sm hover:bg-gray-50">
+                Sign out
+              </button>
+            </form>
+          )}
         </div>
       ) : (
         <form
@@ -43,7 +55,7 @@ export default async function Home() {
         </form>
       )}
 
-      <p className="text-sm text-gray-400">Phase 1 · Slack app + auth</p>
+      <p className="text-sm text-gray-400">Phase 2 · standups MVP</p>
     </main>
   );
 }

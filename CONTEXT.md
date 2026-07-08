@@ -1,71 +1,94 @@
 # CONTEXT.md — Session resume file
 
-> Purpose: if this Claude session ends (e.g. account/usage switch), start a fresh session,
-> say "read CONTEXT.md and continue", and pick up exactly where we left off.
+> Purpose: user switches Claude accounts when usage runs out. In a fresh session:
+> read this file + PLAN.md, then continue exactly from "What's pending" below.
 > Keep this file updated after every meaningful step.
 
 ## Project
 
 In-house Geekbot (async standups) + Rotation.app (duty rotations) replacement.
 Slack-first, admin web dashboard, hard cost ceiling $5/month on AWS.
-**Full architecture and product spec: PLAN.md** (read it first — data model, flows, milestones).
+**Full architecture and product spec: PLAN.md.** Repo: github.com/ashish979/sprint-manager.
 
-## Current state (last updated: 2026-07-08, Phase 1 complete locally)
+## Git state (as of 2026-07-08 ~15:00 IST, verified against origin)
 
-- Phase 0 merged to `main` via PR #1 (repo: ashish979/sprint-manager)
-- Branch: `phase-1-slack-app` — **Phase 1 done, verified locally**
-  (lint ✅ typecheck ✅ 10 tests ✅ `next build` ✅), not yet pushed/deployed
+- `origin/main` = Phase 0 + Phase 1 merged (PR #1 `bfd7374`, PR #2 `bca090e`).
+  **Local `main` is stale — 2 commits behind origin.** Run `git checkout main && git pull`
+  before branching off it for Phase 3.
+- Branch `phase-2-standups` is **already pushed** (matches `origin/phase-2-standups`
+  exactly, `eff1c5c`) with **PR #3 "Phase 2 standups" already open** (since
+  2026-07-08T08:10:27 UTC): Phase 2 standups MVP (`bec1b72`), dev sign-in bypass
+  (`971707b`), context updates (`54b9f10`, `eff1c5c`).
+- **Next action: merge PR #3 to main**, then sync local `main`.
 
-### What exists
+## What works right now (verified live in the org's JOSYS Slack workspace)
 
-**Phase 0** (merged): Next.js 15.5 (App Router, TS, Tailwind 4, npm), `sst.config.ts`
-(Nextjs site, DynamoDB single table pk/sk + GSI1, PROVISIONED 5/5, 15-min Cron →
-`functions/tick.ts` stub, $3/$5 budget alerts, region ap-south-1), CI/CD via GitHub OIDC
-(AWS steps skip until repo var `AWS_OIDC_ROLE_ARN` set), Vitest, `src/lib/due.ts` DUE-key helpers.
+- Full outbound standup loop, locally, no AWS/tunnel:
+  dashboard (http://localhost:3001, dev-bypass session) → create standup → "Start now"
+  → real DM prompt to user + anchor message in channel. `npm run tick` = manual scheduler
+  sweep (prompts due in each tz, reminders, close-at-missed, day close, anchor updates).
+- Slack app **sprint_manager** (created from scratch, installed in JOSYS workspace,
+  bot scopes: chat:write, im:write, users:read). Token verified via auth.test.
+- User's Slack member id: **U07QGT22ZUL** (DEV_USER + test participant).
+- `.env.local` (gitignored) is fully set up: real bot token, DEV_USER, DynamoDB Local
+  config. DO NOT overwrite it.
 
-**Phase 1** (this branch):
-- `src/lib/slack/verify.ts` — HMAC v0 signature check, 5-min replay window, timing-safe; tested
-- `src/lib/slack/request.ts` — shared "read raw body + verify or 401" helper
-- Webhooks: `src/app/api/slack/{events,interactivity,commands}/route.ts`
-  (events handles `url_verification`; commands answers `/rota` with Phase 3 placeholder)
-- `src/auth.ts` — next-auth v5 (beta) Slack OIDC; sign-in restricted to `SLACK_TEAM_ID`;
-  `isAdmin` snapshotted into JWT at login from TEAM#SETTINGS `adminSlackIds` (re-login refreshes)
-- `src/lib/db.ts` — DynamoDB DocumentClient + `getTeamSettings()`
-- `src/lib/env.ts` — all config via plain env vars (see `.env.example`); SST injects them in
-  deployed stages (secrets: SlackSigningSecret, SlackBotToken, SlackClientId, SlackClientSecret,
-  SlackTeamId, AuthSecret)
-- `slack-manifest.yml` — checked-in manifest; replace `<BASE_URL>` per stage
-- Landing page has Sign in/out with Slack; `force-dynamic` so builds need no env
+## What does NOT work yet (by design, no public URL)
 
-### Next steps
+Answer/Skip buttons, answer modal, thread replies, `/rota`, real Slack sign-in — all
+inbound webhooks. User explicitly chose NO ngrok/tunnel; these unlock at AWS deploy.
+Slack app still needs from slack-manifest.yml: interactivity URL, commands URL, events
+URL, OAuth redirect + user scopes (openid/email/profile) + remaining bot scopes
+(commands, usergroups:read/write, channels:read), then reinstall.
 
-1. Push `phase-1-slack-app`, PR to main (user pushes/merges themself)
-2. **User actions to make Phase 1 live:**
-   - AWS OIDC role + repo var `AWS_OIDC_ROLE_ARN` (still pending from Phase 0)
-   - First deploy; then create Slack app(s) from `slack-manifest.yml` with the CloudFront URL
-   - `sst secret set` all six secrets per stage; write TEAM#SETTINGS item with `adminSlackIds`
-3. **Phase 2 — Standups MVP** (PLAN.md §1.1/§2.3): standup CONFIG/DAY/REPORT items, tick sweep
-   of GSI1 DUE keys, DM prompt + "Answer standup" button, Block Kit modal, anchor message +
-   threaded replies + live status edits, configurable reminders, dashboard report views
+## What's pending (agreed order)
+
+1. **User**: merge PR #3 (`phase-2-standups`) to main
+2. **Me**: Phase 3 — Rotations MVP on a fresh branch off updated main
+   (PLAN.md §1.2/§2.4: ROTA CONFIG/SHIFT items, tick rollover, overrides/swaps,
+   channel announce + on-duty DM, usergroup sync, `/rota who` in commands route,
+   dashboard pages). Follow Phase 2 patterns: pure logic + tests, store with
+   conditional writes, engine, force-"rotate now" admin action.
+3. **User+me, parallel**: AWS onboarding — user runs `aws configure` (ap-south-1),
+   then: `npx sst deploy --stage dev` → 6× `sst secret set` (SlackBotToken,
+   SlackSigningSecret, SlackClientId, SlackClientSecret, SlackTeamId, AuthSecret)
+   → redeploy → update Slack app URLs → seed TEAM#SETTINGS adminSlackIds=[U07QGT22ZUL]
+   → verify buttons/modal work. Check budget email in sst.config.ts (vikasahu09@gmail.com).
+4. Later: GitHub OIDC role + `AWS_OIDC_ROLE_ARN` repo var (CI's sst steps skip until set);
+   Phase 4 polish (standup EDIT form is missing, report history, README runbook).
+
+## How to run locally (all of it already set up on this machine)
+
+- `docker compose up -d` (DynamoDB Local :8000; container sprint-manager-dynamodb;
+  Docker Desktop must be running) — table exists; recreate with `npm run db:local`
+- `npm run dev -- -p 3001` (NOT 3000 — taken by user's josys-ui)
+- `npm run tick` — one scheduler sweep
+- Tests/checks: `npm run lint && npm run typecheck && npm test && npm run build`
+- Store smoke test vs DynamoDB Local: env vars from .env.local + `node --import tsx scripts/store-smoke.ts`
 
 ## Standing rules from the user
 
-- **Commits: user's git identity only.** Never add `Co-Authored-By: Claude` trailers or any
-  Claude/AI mention in commit messages or PR bodies.
+- **Commits: user's git identity only. NEVER add `Co-Authored-By: Claude` or any
+  Claude/AI mention in commit messages or PR bodies.** (Also saved in memory.)
+- User prefers step-by-step guidance for Slack/AWS console tasks (new to Slack API).
 
-## Decisions made
+## Key decisions
 
-- Region **ap-south-1**; npm; Next.js 15.x; SST v3 (Ion)
-- DynamoDB PROVISIONED via `transform` (SST default on-demand isn't always-free)
-- App code reads plain env vars (not `Resource.*`) so local dev + typecheck work without
-  `.sst/platform`; SST `link` still grants table IAM
-- Admin allowlist checked once at sign-in (JWT), not per request
-- Budget alert email: vikasahu09@gmail.com (constant in sst.config.ts)
+- Region ap-south-1; npm; Next.js 15.x; SST v3 Ion; DynamoDB PROVISIONED 5/5 via transform
+- App code reads plain env vars (never `Resource.*`) — SST injects in cloud, .env.local locally
+- Tick due-check = window (schedule→closeAt) + conditional-write idempotency; cron(0/15 * * * ? *)
+- GSI1 exists but unused so far (config scan is cheaper at ≤5 standups)
+- Anchor date = participant's local date; anchor posted before first DM (thread parent)
+- Reminders: increment counter BEFORE DM send (fail = skip nudge, never spam)
+- DEV_USER synthetic session via src/lib/session.ts getSession() — all pages/authz use
+  getSession(), never auth() directly; guarded to NODE_ENV !== production
 
 ## Gotchas
 
-- `sst.config.ts` excluded from tsconfig + eslint (types come from generated `.sst/platform`)
-- Slack signature must be computed over the **raw** body — read `req.text()` before parsing
-- Slack OIDC redirect requires HTTPS → local sign-in testing needs the deployed URL or a tunnel
-- Landing page is `force-dynamic`; keep it that way or builds will call `auth()` without env
-- `functions/tick.ts` still a no-op stub until Phase 2
+- sst.config.ts excluded from tsconfig + eslint (needs generated .sst/platform types)
+- Slack signature verified over RAW body (req.text() before parse)
+- DynamoDB Local container needs `user: root` (root-owned volume, else sqlite hangs silently)
+- tsx runs scripts as CJS → main() wrapper, no top-level await
+- All dashboard pages force-dynamic (auth() at build would throw)
+- Modal private_metadata = {standupId, date, dmChannel, dmTs}; modal title ≤24 chars
+- Slack Web API wrapper uses form-encoding (JSON bodies not accepted by all methods)

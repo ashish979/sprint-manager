@@ -1,11 +1,14 @@
+import { sweep } from "../src/lib/standup/engine";
+
 /**
- * Scheduler tick (PLAN.md §2.1) — fired by EventBridge every 15 minutes.
+ * Scheduler tick (PLAN.md §2.1) — EventBridge cron, quarter-hour aligned.
  *
- * Phase 2 will make this sweep DynamoDB GSI1 for DUE items (standup prompts
- * in each participant's timezone, reminder nudges, shift rollovers) and act
- * on them idempotently. For Phase 0 it only proves the wiring.
+ * Sweeps every standup participant: due prompts, reminder nudges, close
+ * cutoffs. Rotations join the sweep in Phase 3.
  */
 export const handler = async () => {
-  console.log("tick: scheduler sweep (Phase 0 stub, no-op)");
+  const started = Date.now();
+  await sweep();
+  console.log(`tick: sweep done in ${Date.now() - started}ms`);
   return { ok: true };
 };
