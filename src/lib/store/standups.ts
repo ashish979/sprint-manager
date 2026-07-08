@@ -24,14 +24,15 @@ export async function getStandup(id: string): Promise<StandupConfig | undefined>
 
 /**
  * Scan is fine here: a handful of CONFIG items in a tiny table, read once
- * per tick / dashboard view.
+ * per tick / dashboard view. pk prefix filter matters — ROTA#…/CONFIG items
+ * share the same sk.
  */
 export async function listStandups(): Promise<StandupConfig[]> {
   const res = await db.send(
     new ScanCommand({
       TableName: env.tableName,
-      FilterExpression: "sk = :config",
-      ExpressionAttributeValues: { ":config": "CONFIG" },
+      FilterExpression: "sk = :config AND begins_with(pk, :prefix)",
+      ExpressionAttributeValues: { ":config": "CONFIG", ":prefix": "STANDUP#" },
     }),
   );
   return (res.Items ?? []) as StandupConfig[];

@@ -73,3 +73,49 @@ export interface UserProfile {
   name?: string;
   updatedAt: string;
 }
+
+export type Cadence = "daily" | "weekdays" | "weekly" | "biweekly" | "monthly";
+
+export interface RotationConfig {
+  id: string;
+  name: string;
+  /** Ordered Slack user ids; round-robin cycles through this list. */
+  members: string[];
+  cadence: Cadence;
+  /** Announce channel id (C…). */
+  channel: string;
+  /** Slack user group id (S…) kept pointed at the on-duty member. */
+  usergroupId?: string;
+  /**
+   * Index into `members` for the next auto-assigned shift. Advances every
+   * shift regardless of overrides, so the round-robin stays fair even when
+   * a member's turn is overridden or skipped.
+   */
+  cursor: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const ROTATION_DEFAULTS = {
+  cadence: "weekly" as Cadence,
+};
+
+export type ShiftSource = "auto" | "override" | "swap";
+
+export interface Shift {
+  rotationId: string;
+  /** Calendar date (UTC) this shift starts. */
+  startDate: string;
+  assignee: string;
+  source: ShiftSource;
+  createdAt: string;
+}
+
+export interface ShiftOverride {
+  rotationId: string;
+  /** Calendar date (UTC) the override applies to. */
+  date: string;
+  assignee: string;
+  source: Extract<ShiftSource, "override" | "swap">;
+  createdAt: string;
+}

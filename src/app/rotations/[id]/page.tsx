@@ -1,0 +1,148 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+
+import { isAdminSession } from "@/lib/authz";
+import { getSession } from "@/lib/session";
+import { getRotation } from "@/lib/store/rotations";
+import { getLatestShift, listShifts } from "@/lib/store/shifts";
+import { getUserProfile } from "@/lib/store/users";
+import type { ShiftSource } from "@/lib/types";
+
+import { deleteRotationAction, queueOverrideAction, rotateNowAction } from "../actions";
+
+export const dynamic = "force-dynamic";
+
+const SOURCE_BADGE: Record<ShiftSource, { label: string; class: string }> = {
+  auto: { label: "auto", class: "bg-gray-100 text-gray-600" },
+  override: { label: "override", class: "bg-amber-100 text-amber-800" },
+  swap: { label: "swap", class: "bg-blue-100 text-blue-800" },
+};
+
+export default async function RotationDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const session = await getSession();
+  if (!session?.user) redirect("/rotations");
+
+  const { id } = await params;
+  const rotation = await getRotation(id);
+  if (!rotation) notFound();
+
+  const [admin, current, history] = await Promise.all([
+    isAdminSession(),
+    getLatestShift(rotation.id),
+    listShifts(rotation.id),
+  ]);
+  const profiles = await Promise.all(rotation.members.map((u) => getUserProfile(u)));
+  const nameOf = (userId: string) => profiles.find((p) => p?.userId === userId)?.name ?? userId;
+  const nextIndex = rotation.cursor % rotation.members.length;
+  const next = rotation.members[nextIndex];
+
+  return (
+    <main className="mx-auto max-w-3xl p-8">
+      <Link href="/rotations" className="text-sm text-gray-500 underline">
+        ← All rotations
+      </Link>
+
+      <div className="mt-2 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{rotation.name}</h1>
+        {admin && (
+          <div className="flex gap-2">
+            <form action={rotateNowAction}>
+              <input type="hidden" name="id" value={rotation.id} />
+              <button className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
+                Rotate now
+              </button>
+            </form>
+            <form action={deleteRotationAction}>
+              <input type="hidden" name="id" value={rotation.id} />
+              <button className="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+                Delete
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+
+      <p className="mt-1 text-sm text-gray-500">
+        {rotation.cadence} · channel <code>{rotation.channel}</code>
+        {rotation.usergroupId && (
+          <>
+            {" "}
+            · user group <code>{rotation.usergroupId}</code>
+          </>
+        )}
+      </p>
+
+      <div className="mt-6 rounded border p-4">
+        <p className="text-sm font-medium text-gray-500">On duty</p>
+        <p className="mt-1 text-lg">
+          {current ? nameOf(current.assignee) : "not rotated yet"}
+          {current && <span className="ml-2 text-sm text-gray-500">since {current.startDate}</span>}
+        </p>
+        <p className="mt-2 text-sm text-gray-500">Next up: {nameOf(next)}</p>
+      </div>
+
+      <h2 className="mt-8 text-lg font-semibold">Members</h2>
+      <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm">
+        {rotation.members.map((userId, i) => (
+          <li key={userId} className={i === nextIndex ? "font-medium" : ""}>
+            {nameOf(userId)}
+          </li>
+        ))}
+      </ol>
+
+      {admin && (
+        <>
+          <h2 className="mt-8 text-lg font-semibold">Queue an override</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Assign a specific person to a future shift — takes effect at the next tick and
+            doesn&apos;t disturb the round-robin order.
+          </p>
+          <form action={queueOverrideAction} className="mt-3 flex flex-wrap items-end gap-3">
+            <input type="hidden" name="rotationId" value={rotation.id} />
+            <label className="text-sm font-medium">
+              Date
+              <input
+                type="date"
+                name="date"
+                required
+                className="mt-1 rounded border px-2 py-1 text-sm"
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Assignee (Slack user id)
+              <input
+                name="assignee"
+                required
+                placeholder="U0123ABC"
+                className="mt-1 rounded border px-2 py-1 text-sm"
+              />
+            </label>
+            <button className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50">Queue</button>
+          </form>
+        </>
+      )}
+
+      <h2 className="mt-8 text-lg font-semibold">History</h2>
+      {history.length === 0 ? (
+        <p className="mt-2 text-sm text-gray-500">No shifts yet.</p>
+      ) : (
+        <ul className="mt-2 divide-y rounded border text-sm">
+          {history.map((s) => (
+            <li key={s.startDate} className="flex items-center justify-between p-3">
+              <span>
+                {s.startDate} — {nameOf(s.assignee)}
+              </span>
+              <span className={`rounded px-2 py-0.5 text-xs ${SOURCE_BADGE[s.source].class}`}>
+                {SOURCE_BADGE[s.source].label}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+  );
+}
