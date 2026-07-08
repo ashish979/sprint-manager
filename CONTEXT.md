@@ -10,13 +10,16 @@ In-house Geekbot (async standups) + Rotation.app (duty rotations) replacement.
 Slack-first, admin web dashboard, hard cost ceiling $5/month on AWS.
 **Full architecture and product spec: PLAN.md.** Repo: github.com/ashish979/sprint-manager.
 
-## Git state (as of 2026-07-08 ~13:30 IST)
+## Git state (as of 2026-07-08 ~15:00 IST, verified against origin)
 
-- `main` = Phase 0 + Phase 1 (PRs #1, #2 merged)
-- Current branch `phase-2-standups` = 3 commits: Phase 2 standups MVP (`bec1b72`),
-  dev sign-in bypass (`971707b`), context update (`54b9f10`) + this file's update
-- **User was about to: `git push` this branch (2+ commits not on origin) and merge its PR.**
-  Verify with `git log --oneline origin/main..HEAD` before assuming.
+- `origin/main` = Phase 0 + Phase 1 merged (PR #1 `bfd7374`, PR #2 `bca090e`).
+  **Local `main` is stale — 2 commits behind origin.** Run `git checkout main && git pull`
+  before branching off it for Phase 3.
+- Branch `phase-2-standups` is **already pushed** (matches `origin/phase-2-standups`
+  exactly, `eff1c5c`) with **PR #3 "Phase 2 standups" already open** (since
+  2026-07-08T08:10:27 UTC): Phase 2 standups MVP (`bec1b72`), dev sign-in bypass
+  (`971707b`), context updates (`54b9f10`, `eff1c5c`).
+- **Next action: merge PR #3 to main**, then sync local `main`.
 
 ## What works right now (verified live in the org's JOSYS Slack workspace)
 
@@ -40,7 +43,7 @@ URL, OAuth redirect + user scopes (openid/email/profile) + remaining bot scopes
 
 ## What's pending (agreed order)
 
-1. **User**: push `phase-2-standups`, merge PR to main
+1. **User**: merge PR #3 (`phase-2-standups`) to main
 2. **Me**: Phase 3 — Rotations MVP on a fresh branch off updated main
    (PLAN.md §1.2/§2.4: ROTA CONFIG/SHIFT items, tick rollover, overrides/swaps,
    channel announce + on-duty DM, usergroup sync, `/rota who` in commands route,
