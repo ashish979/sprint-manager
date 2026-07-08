@@ -61,13 +61,29 @@ export default $config({
     // Set after deploy with: sst secret set <name> <value> [--stage prod]
     const slackSigningSecret = new sst.Secret("SlackSigningSecret");
     const slackBotToken = new sst.Secret("SlackBotToken");
+    // Sign in with Slack (OIDC) + Auth.js session encryption. Per-stage
+    // values since dev/prod are separate Slack apps.
+    const slackClientId = new sst.Secret("SlackClientId");
+    const slackClientSecret = new sst.Secret("SlackClientSecret");
+    const slackTeamId = new sst.Secret("SlackTeamId");
+    const authSecret = new sst.Secret("AuthSecret");
+
+    // App code reads plain env vars (src/lib/env.ts) so local dev works
+    // from .env.local; links below still grant IAM access to the table.
+    const sharedEnvironment = {
+      SLACK_SIGNING_SECRET: slackSigningSecret.value,
+      SLACK_BOT_TOKEN: slackBotToken.value,
+      SLACK_TEAM_ID: slackTeamId.value,
+      TABLE_NAME: table.name,
+    };
 
     // Idempotent scheduler sweep: standup prompts, reminders, shift rollovers.
     new sst.aws.Cron("Tick", {
       schedule: "rate(15 minutes)",
       function: {
         handler: "functions/tick.handler",
-        link: [table, slackSigningSecret, slackBotToken],
+        link: [table],
+        environment: sharedEnvironment,
         timeout: "60 seconds",
         // Guardrail: a runaway tick can never fan out.
         concurrency: { reserved: 1 },
@@ -76,7 +92,15 @@ export default $config({
     });
 
     const site = new sst.aws.Nextjs("Site", {
-      link: [table, slackSigningSecret, slackBotToken],
+      link: [table],
+      environment: {
+        ...sharedEnvironment,
+        SLACK_CLIENT_ID: slackClientId.value,
+        SLACK_CLIENT_SECRET: slackClientSecret.value,
+        AUTH_SECRET: authSecret.value,
+        // Auth.js needs its public URL behind CloudFront.
+        AUTH_TRUST_HOST: "true",
+      },
       server: {
         logging: { retention: "2 weeks" },
       },

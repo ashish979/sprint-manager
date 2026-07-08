@@ -10,37 +10,43 @@ In-house Geekbot (async standups) + Rotation.app (duty rotations) replacement.
 Slack-first, admin web dashboard, hard cost ceiling $5/month on AWS.
 **Full architecture and product spec: PLAN.md** (read it first — data model, flows, milestones).
 
-## Current state (last updated: 2026-07-07, Phase 0 complete locally)
+## Current state (last updated: 2026-07-08, Phase 1 complete locally)
 
-- Branch: `phase-0-scaffolding` (from `main`)
-- **Phase 0 scaffolding is DONE and verified locally**: lint ✅ typecheck ✅ 5 unit tests ✅ `next build` ✅
-- Not yet deployed to AWS (needs user's AWS account + OIDC role, see below)
+- Phase 0 merged to `main` via PR #1 (repo: ashish979/sprint-manager)
+- Branch: `phase-1-slack-app` — **Phase 1 done, verified locally**
+  (lint ✅ typecheck ✅ 10 tests ✅ `next build` ✅), not yet pushed/deployed
 
 ### What exists
 
-- Next.js 15.5 (App Router, TS, Tailwind 4, `src/` dir, npm), placeholder landing page
-- `sst.config.ts` (SST v3.19): `sst.aws.Nextjs` site, `sst.aws.Dynamo` single table
-  (pk/sk + GSI1 gsi1pk/gsi1sk, transformed to PROVISIONED 5/5 table + 5/5 GSI for free tier),
-  `sst.aws.Cron` every 15 min → `functions/tick.ts` stub (reserved concurrency 1, 2-wk logs),
-  `sst.Secret` SlackSigningSecret + SlackBotToken, AWS Budget alerts at $3/$5 (prod only,
-  email vikasahu09@gmail.com). Region **ap-south-1**.
-- `src/lib/due.ts` + tests: `dueKey()`/`floorToTick()` — GSI1 `DUE#yyyy-mm-dd-hh-mm` key helpers
-- Vitest (`npm test`), `npm run typecheck`; `sst.config.ts` excluded from tsconfig + eslint
-  (its types come from generated `.sst/platform`, which is gitignored)
-- `.github/workflows/ci.yml` (PRs + non-main pushes: lint/typecheck/test, then `sst diff --stage prod`
-  **only if** repo variable `AWS_OIDC_ROLE_ARN` is set) and `deploy.yml` (main → checks + `sst deploy --stage prod`)
+**Phase 0** (merged): Next.js 15.5 (App Router, TS, Tailwind 4, npm), `sst.config.ts`
+(Nextjs site, DynamoDB single table pk/sk + GSI1, PROVISIONED 5/5, 15-min Cron →
+`functions/tick.ts` stub, $3/$5 budget alerts, region ap-south-1), CI/CD via GitHub OIDC
+(AWS steps skip until repo var `AWS_OIDC_ROLE_ARN` set), Vitest, `src/lib/due.ts` DUE-key helpers.
+
+**Phase 1** (this branch):
+- `src/lib/slack/verify.ts` — HMAC v0 signature check, 5-min replay window, timing-safe; tested
+- `src/lib/slack/request.ts` — shared "read raw body + verify or 401" helper
+- Webhooks: `src/app/api/slack/{events,interactivity,commands}/route.ts`
+  (events handles `url_verification`; commands answers `/rota` with Phase 3 placeholder)
+- `src/auth.ts` — next-auth v5 (beta) Slack OIDC; sign-in restricted to `SLACK_TEAM_ID`;
+  `isAdmin` snapshotted into JWT at login from TEAM#SETTINGS `adminSlackIds` (re-login refreshes)
+- `src/lib/db.ts` — DynamoDB DocumentClient + `getTeamSettings()`
+- `src/lib/env.ts` — all config via plain env vars (see `.env.example`); SST injects them in
+  deployed stages (secrets: SlackSigningSecret, SlackBotToken, SlackClientId, SlackClientSecret,
+  SlackTeamId, AuthSecret)
+- `slack-manifest.yml` — checked-in manifest; replace `<BASE_URL>` per stage
+- Landing page has Sign in/out with Slack; `force-dynamic` so builds need no env
 
 ### Next steps
 
-1. Commit Phase 0 on `phase-0-scaffolding`, push, open PR to `main` (repo: ashish979/sprint-manager)
-2. **User actions before first deploy:**
-   - Create AWS IAM role trusted by GitHub OIDC (`token.actions.githubusercontent.com`,
-     repo `ashish979/sprint-manager`), admin-ish perms for SST; set repo variable `AWS_OIDC_ROLE_ARN`
-   - Locally: `npx sst deploy` (dev stage) or merge PR to deploy prod
-   - After deploy: `npx sst secret set SlackSigningSecret <val> --stage prod` (and SlackBotToken)
-3. **Phase 1** (PLAN.md §7): `slack-manifest.yml`, `/api/slack/{events,interactivity,commands}`
-   routes with signature verification (5-min replay window), Sign in with Slack via Auth.js,
-   team-id check + admin allowlist in `TEAM#SETTINGS`
+1. Push `phase-1-slack-app`, PR to main (user pushes/merges themself)
+2. **User actions to make Phase 1 live:**
+   - AWS OIDC role + repo var `AWS_OIDC_ROLE_ARN` (still pending from Phase 0)
+   - First deploy; then create Slack app(s) from `slack-manifest.yml` with the CloudFront URL
+   - `sst secret set` all six secrets per stage; write TEAM#SETTINGS item with `adminSlackIds`
+3. **Phase 2 — Standups MVP** (PLAN.md §1.1/§2.3): standup CONFIG/DAY/REPORT items, tick sweep
+   of GSI1 DUE keys, DM prompt + "Answer standup" button, Block Kit modal, anchor message +
+   threaded replies + live status edits, configurable reminders, dashboard report views
 
 ## Standing rules from the user
 
@@ -49,16 +55,17 @@ Slack-first, admin web dashboard, hard cost ceiling $5/month on AWS.
 
 ## Decisions made
 
-- Region **ap-south-1** (user in India; PLAN.md left it open)
-- npm as package manager (Node v20.19.0)
-- Next.js pinned 15.x per PLAN.md; SST v3 (Ion)
-- DynamoDB PROVISIONED via `transform` (SST default is on-demand, which isn't always-free)
-- CI skips `sst diff` gracefully until `AWS_OIDC_ROLE_ARN` repo variable exists
-- Budget alert email: vikasahu09@gmail.com (constant in sst.config.ts — change there if needed)
+- Region **ap-south-1**; npm; Next.js 15.x; SST v3 (Ion)
+- DynamoDB PROVISIONED via `transform` (SST default on-demand isn't always-free)
+- App code reads plain env vars (not `Resource.*`) so local dev + typecheck work without
+  `.sst/platform`; SST `link` still grants table IAM
+- Admin allowlist checked once at sign-in (JWT), not per request
+- Budget alert email: vikasahu09@gmail.com (constant in sst.config.ts)
 
 ## Gotchas
 
-- `sst.config.ts` must stay excluded from tsconfig/eslint until `.sst/platform` is generated
-  (first `sst` command creates it); don't import `sst` package types in app code yet
-- `functions/tick.ts` is a no-op stub; Phase 2 gives it the GSI1 DUE sweep
-- Don't use `Resource.*` from `sst` in app code until first deploy generates `sst-env.d.ts`
+- `sst.config.ts` excluded from tsconfig + eslint (types come from generated `.sst/platform`)
+- Slack signature must be computed over the **raw** body — read `req.text()` before parsing
+- Slack OIDC redirect requires HTTPS → local sign-in testing needs the deployed URL or a tunnel
+- Landing page is `force-dynamic`; keep it that way or builds will call `auth()` without env
+- `functions/tick.ts` still a no-op stub until Phase 2

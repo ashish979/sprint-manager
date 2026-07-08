@@ -1,0 +1,48 @@
+# Slack app manifest (PLAN.md §5) — create/update apps at https://api.slack.com/apps
+#
+# Two apps share this manifest: sprint-manager-dev and sprint-manager (prod).
+# Replace <BASE_URL> with the stage's CloudFront URL before pasting
+# (e.g. https://dxxxxxxxxxxxx.cloudfront.net).
+display_information:
+  name: Sprint Manager
+  description: Async standups & duty rotations, in-house.
+  background_color: "#4A154B"
+features:
+  bot_user:
+    display_name: sprint-manager
+    always_online: true
+  slash_commands:
+    - command: /rota
+      url: https://<BASE_URL>/api/slack/commands
+      description: Who's on duty / who's next
+      usage_hint: who <rotation-name>
+      should_escape: false
+oauth_config:
+  redirect_urls:
+    # Auth.js (Sign in with Slack) callback — Slack requires HTTPS.
+    - https://<BASE_URL>/api/auth/callback/slack
+  scopes:
+    user:
+      # Sign in with Slack (OIDC)
+      - openid
+      - email
+      - profile
+    bot:
+      - chat:write # anchor messages, DMs, thread replies
+      - im:write # open DM channels for prompts/nudges
+      - commands # /rota
+      - users:read # timezones, display names
+      - usergroups:read # rotation user-group sync
+      - usergroups:write
+      - channels:read # broadcast channel pickers
+settings:
+  event_subscriptions:
+    request_url: https://<BASE_URL>/api/slack/events
+    bot_events:
+      - app_home_opened
+  interactivity:
+    is_enabled: true
+    request_url: https://<BASE_URL>/api/slack/interactivity
+  org_deploy_enabled: false
+  socket_mode_enabled: false # Lambda is request-driven; HTTP endpoints only
+  token_rotation_enabled: false
