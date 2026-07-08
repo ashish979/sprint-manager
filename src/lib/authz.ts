@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 
 /**
  * Dashboard authorization. Members can view; admins manage
@@ -13,7 +13,7 @@ function devAdminBypass(): boolean {
 }
 
 export async function requireSession() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) throw new Error("unauthorized: sign in first");
   return session;
 }
@@ -27,6 +27,6 @@ export async function requireAdmin() {
 }
 
 export async function isAdminSession(): Promise<boolean> {
-  const session = await auth();
+  const session = await getSession();
   return Boolean(session?.user && (session.isAdmin || devAdminBypass()));
 }

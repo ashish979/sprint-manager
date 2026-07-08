@@ -49,11 +49,14 @@ Slack-first, admin web dashboard, hard cost ceiling $5/month on AWS.
 ### Local run (no AWS)
 
 1. `docker compose up -d && npm run db:local`
-2. `cp .env.example .env.local` — fill Slack creds (needs Slack app + HTTPS tunnel,
-   e.g. `ngrok http 3001`; manifest in slack-manifest.yml), AUTH_SECRET; DEV_ADMIN=true
+2. `.env.local` exists (gitignored, pre-filled): user must set `SLACK_BOT_TOKEN` (xoxb-)
+   and `DEV_USER` (their Slack member id). `DEV_USER` = dev-only sign-in bypass
+   (`src/lib/session.ts` getSession()) → synthetic admin session, no OAuth/tunnel needed.
 3. `npm run dev -- -p 3001` (3000 is taken by user's josys-ui)
-4. Create standup in dashboard → `npm run tick` → DM arrives → answer/skip → check channel
-   thread + dashboard. Tick doesn't loop locally — run it per window you want to simulate.
+4. Create standup in dashboard → "Start now" or `npm run tick` → real DMs + channel anchor
+   appear in Slack. **Without a tunnel, inbound is dead**: Answer/skip buttons, modal,
+   /rota, real sign-in all need ngrok or the deployed URL. User chose no-tunnel for now;
+   moving to AWS (`sst dev`) later.
 
 ### Next steps
 

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { isAdminSession } from "@/lib/authz";
+import { getSession } from "@/lib/session";
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
 import { listReports } from "@/lib/store/reports";
 import { getStandup } from "@/lib/store/standups";
@@ -31,7 +31,7 @@ export default async function StandupDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ date?: string }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) redirect("/standups");
 
   const { id } = await params;

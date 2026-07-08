@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-import { auth } from "@/auth";
 import { isAdminSession } from "@/lib/authz";
+import { getSession } from "@/lib/session";
 import { listStandups } from "@/lib/store/standups";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 export default async function StandupsPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     return (
       <main className="mx-auto max-w-3xl p-8">
