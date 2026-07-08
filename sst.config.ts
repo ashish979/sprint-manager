@@ -19,7 +19,7 @@ export default $config({
       protect: ["prod"].includes(input?.stage),
       home: "aws",
       providers: {
-        aws: { region: "ap-south-1" },
+        aws: { region: "ap-northeast-1" },
       },
     };
   },

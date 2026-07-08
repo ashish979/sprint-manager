@@ -36,7 +36,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
-          aws-region: ap-south-1
+          aws-region: ap-northeast-1
 
       - name: sst deploy
         run: npx sst deploy --stage prod
