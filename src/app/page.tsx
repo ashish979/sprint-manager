@@ -25,6 +25,9 @@ export default async function Home() {
           <Link href="/standups" className="text-sm underline">
             Go to standups →
           </Link>
+          <Link href="/rotations" className="text-sm underline">
+            Go to rotations →
+          </Link>
           {session.isDev ? (
             <p className="text-xs text-amber-600">
               dev session via DEV_USER — no Slack sign-in
@@ -55,7 +58,7 @@ export default async function Home() {
         </form>
       )}
 
-      <p className="text-sm text-gray-400">Phase 2 · standups MVP</p>
+      <p className="text-sm text-gray-400">Phase 3 · standups + rotations MVP</p>
     </main>
   );
 }

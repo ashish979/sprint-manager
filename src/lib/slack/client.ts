@@ -89,4 +89,9 @@ export const slack = {
       body: JSON.stringify({ replace_original: true, text }),
     });
   },
+
+  /** Points a user group at exactly these members (comma list, not JSON). */
+  async usergroupsUsersUpdate(usergroup: string, users: string[]): Promise<void> {
+    await call("usergroups.users.update", { usergroup, users: users.join(",") });
+  },
 };

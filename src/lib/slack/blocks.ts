@@ -1,5 +1,5 @@
 import { friendlyDate } from "@/lib/tz";
-import type { Report, StandupConfig } from "@/lib/types";
+import type { Report, RotationConfig, StandupConfig } from "@/lib/types";
 
 /** Block Kit builders for all standup surfaces. */
 
@@ -157,5 +157,30 @@ export function replyMessage(
         text: { type: "mrkdwn", text: `${mention(userId)}\n\n${body}`.slice(0, 2900) },
       },
     ],
+  };
+}
+
+// --- Rotation announce + on-duty DM ---
+
+export function shiftAnnounceMessage(
+  rotation: RotationConfig,
+  assignee: string,
+  date: string,
+): { text: string; blocks: unknown[] } {
+  const text = `🔄 *${rotation.name}* — ${mention(assignee)} is on duty starting ${friendlyDate(date)}.`;
+  return {
+    text: `${rotation.name}: ${mention(assignee)} is on duty starting ${friendlyDate(date)}`,
+    blocks: [{ type: "section", text: { type: "mrkdwn", text } }],
+  };
+}
+
+export function onDutyDmMessage(
+  rotation: RotationConfig,
+  date: string,
+): { text: string; blocks: unknown[] } {
+  const text = `📟 You're on duty for *${rotation.name}* starting ${friendlyDate(date)}. Thanks!`;
+  return {
+    text: `You're on duty for ${rotation.name} starting ${friendlyDate(date)}`,
+    blocks: [{ type: "section", text: { type: "mrkdwn", text } }],
   };
 }
