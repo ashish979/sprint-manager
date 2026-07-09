@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
+import { ensureChannelInfo } from "@/lib/store/channels";
 import { listReports } from "@/lib/store/reports";
 import { getStandup } from "@/lib/store/standups";
 import { getUserProfile } from "@/lib/store/users";
@@ -12,6 +13,10 @@ import type { Report, ReportStatus } from "@/lib/types";
 import { deleteStandupAction, sendReminderAction, startNowAction } from "../actions";
 
 export const dynamic = "force-dynamic";
+
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const chipClass =
+  "rounded bg-zinc-100 px-2 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300";
 
 const STATUS_BADGE: Record<ReportStatus, { label: string; class: string }> = {
   submitted: {
@@ -57,10 +62,11 @@ export default async function StandupDetailPage({
   const { date: rawDate } = await searchParams;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate ?? "") ? rawDate! : todayUtc();
 
-  const [reports, admin, profiles] = await Promise.all([
+  const [reports, admin, profiles, channelInfo] = await Promise.all([
     listReports(standup.id, date),
     isAdminSession(),
     Promise.all(standup.participants.map((u) => getUserProfile(u))),
+    ensureChannelInfo(standup.channel),
   ]);
   const nameOf = (userId: string) =>
     profiles.find((p) => p?.userId === userId)?.name ?? userId;
@@ -100,11 +106,17 @@ export default async function StandupDetailPage({
         )}
       </div>
 
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        {standup.time} local · reminds every {standup.remindAfterMinutes} min ×
-        {standup.maxReminders} · closes {standup.closeAtTime} · channel{" "}
-        <code>{standup.channel}</code>
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className={chipClass}>🕐 {standup.time} local</span>
+        <span className={chipClass}>
+          📆 {standup.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}
+        </span>
+        <span className={chipClass}>
+          🔔 every {standup.remindAfterMinutes}m, up to {standup.maxReminders}×
+        </span>
+        <span className={chipClass}>🔒 closes {standup.closeAtTime}</span>
+        <span className={chipClass}>#{channelInfo?.name ?? standup.channel}</span>
+      </div>
 
       <form method="get" className="mt-6 flex items-center gap-2">
         <label className="text-sm font-medium" htmlFor="date">

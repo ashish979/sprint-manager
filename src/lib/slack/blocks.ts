@@ -1,3 +1,4 @@
+import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
 import { friendlyDate } from "@/lib/tz";
 import type { Report, RotationConfig, StandupConfig } from "@/lib/types";
 
@@ -15,6 +16,36 @@ export interface ModalMeta extends ButtonMeta {
 
 const mention = (userId: string) => `<@${userId}>`;
 
+const STATUS_ICON: Record<Report["status"], string> = {
+  submitted: "✅",
+  pending: "⏳",
+  skipped: "🏖️",
+  missed: "❌",
+  ooo: "🌴",
+};
+
+function answerButtons(standup: Pick<StandupConfig, "id">, date: string): unknown {
+  const value = JSON.stringify({ standupId: standup.id, date } satisfies ButtonMeta);
+  return {
+    type: "actions",
+    elements: [
+      {
+        type: "button",
+        style: "primary",
+        action_id: "standup:answer",
+        text: { type: "plain_text", text: "Answer standup" },
+        value,
+      },
+      {
+        type: "button",
+        action_id: "standup:skip",
+        text: { type: "plain_text", text: "Not today" },
+        value,
+      },
+    ],
+  };
+}
+
 // --- Channel anchor message (one per standup per day) ---
 
 export function anchorMessage(
@@ -23,36 +54,46 @@ export function anchorMessage(
   reports: Report[],
   dayStatus: "open" | "closed",
 ): { text: string; blocks: unknown[] } {
-  const byStatus = (s: Report["status"]) => reports.filter((r) => r.status === s);
-  const submitted = byStatus("submitted");
-  const skipped = byStatus("skipped");
-  const missed = byStatus("missed");
-  const ooo = byStatus("ooo");
+  const byUser = new Map(reports.map((r) => [r.userId, r]));
+  const submitted = reports.filter((r) => r.status === "submitted");
+  const skipped = reports.filter((r) => r.status === "skipped");
+  const missed = reports.filter((r) => r.status === "missed");
+  const ooo = reports.filter((r) => r.status === "ooo");
   const resolved = new Set(reports.filter((r) => r.status !== "pending").map((r) => r.userId));
   const waiting = standup.participants.filter((u) => !resolved.has(u));
 
-  let status: string;
+  const roster = standup.participants
+    .map((userId) => {
+      const report = byUser.get(userId);
+      const icon = report ? STATUS_ICON[report.status] : STATUS_ICON.pending;
+      return `${icon} ${mention(userId)}`;
+    })
+    .join("\n");
+
+  let summary: string;
   if (dayStatus === "closed") {
-    status = `🏁 Closed — ${submitted.length}/${standup.participants.length} responded`;
-    if (missed.length > 0) status += `, ${missed.length} missed`;
-    if (skipped.length > 0) status += `, ${skipped.length} skipped`;
-    if (ooo.length > 0) status += `, ${ooo.length} OOO`;
+    summary = `🏁 Closed — ${submitted.length}/${standup.participants.length} responded`;
+    if (missed.length > 0) summary += `, ${missed.length} missed`;
+    if (skipped.length > 0) summary += `, ${skipped.length} skipped`;
+    if (ooo.length > 0) summary += `, ${ooo.length} OOO`;
   } else if (waiting.length === 0) {
-    status = `✅ Everyone is in — ${submitted.length} responded${
+    summary = `✅ Everyone's in — ${submitted.length} responded${
       skipped.length > 0 ? `, ${skipped.length} skipped` : ""
     }${ooo.length > 0 ? `, ${ooo.length} OOO` : ""}`;
   } else {
-    status = `⏳ ${submitted.length}/${standup.participants.length} responded — waiting on ${waiting
+    summary = `⏳ ${submitted.length}/${standup.participants.length} responded — waiting on ${waiting
       .map(mention)
       .join(", ")}`;
   }
 
-  const title = `🌅 *${standup.name}* — ${friendlyDate(date)}`;
   return {
     text: `${standup.name} — ${friendlyDate(date)}`,
     blocks: [
-      { type: "section", text: { type: "mrkdwn", text: title } },
-      { type: "context", elements: [{ type: "mrkdwn", text: status }] },
+      { type: "header", text: { type: "plain_text", text: `🌅 ${standup.name}`, emoji: true } },
+      { type: "context", elements: [{ type: "mrkdwn", text: friendlyDate(date) }] },
+      { type: "divider" },
+      { type: "section", text: { type: "mrkdwn", text: roster } },
+      { type: "context", elements: [{ type: "mrkdwn", text: summary }] },
     ],
   };
 }
@@ -63,7 +104,6 @@ export function promptMessage(
   standup: StandupConfig,
   date: string,
 ): { text: string; blocks: unknown[] } {
-  const value = JSON.stringify({ standupId: standup.id, date } satisfies ButtonMeta);
   return {
     text: `Time for ${standup.name}!`,
     blocks: [
@@ -74,21 +114,13 @@ export function promptMessage(
           text: `🌅 Good day! It's time for *${standup.name}* (${friendlyDate(date)}).`,
         },
       },
+      answerButtons(standup, date),
       {
-        type: "actions",
+        type: "context",
         elements: [
           {
-            type: "button",
-            style: "primary",
-            action_id: "standup:answer",
-            text: { type: "plain_text", text: "Answer standup" },
-            value,
-          },
-          {
-            type: "button",
-            action_id: "standup:skip",
-            text: { type: "plain_text", text: "Not today" },
-            value,
+            type: "mrkdwn",
+            text: `I'll nudge you every ${standup.remindAfterMinutes} min (up to ${standup.maxReminders}×) until it closes at ${standup.closeAtTime}.`,
           },
         ],
       },
@@ -96,11 +128,25 @@ export function promptMessage(
   };
 }
 
-export function reminderText(
+/** Nudge DM — carries the same Answer/Skip buttons as the original prompt. */
+export function reminderMessage(
   standup: StandupConfig,
+  date: string,
   reminderNumber: number,
-): string {
-  return `⏰ Reminder ${reminderNumber}/${standup.maxReminders}: *${standup.name}* is still waiting for your update. Scroll up to answer or skip.`;
+): { text: string; blocks: unknown[] } {
+  return {
+    text: `⏰ Reminder ${reminderNumber}/${standup.maxReminders}: ${standup.name}`,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `⏰ *Reminder ${reminderNumber}/${standup.maxReminders}* — still waiting on your update for *${standup.name}*.`,
+        },
+      },
+      answerButtons(standup, date),
+    ],
+  };
 }
 
 // --- Answer modal ---
@@ -110,20 +156,28 @@ export function answerModal(standup: StandupConfig, meta: ModalMeta): unknown {
     type: "modal",
     callback_id: "standup:submit",
     private_metadata: JSON.stringify(meta),
-    title: { type: "plain_text", text: "Daily standup" }, // max 24 chars
+    title: { type: "plain_text", text: standup.name.slice(0, 24) || "Standup" }, // max 24 chars
     submit: { type: "plain_text", text: "Submit" },
     close: { type: "plain_text", text: "Cancel" },
-    blocks: standup.questions.map((question, i) => ({
-      type: "input",
-      block_id: `q_${i}`,
-      optional: true,
-      label: { type: "plain_text", text: question.slice(0, 150) },
-      element: {
-        type: "plain_text_input",
-        action_id: "answer",
-        multiline: true,
+    blocks: [
+      {
+        type: "context",
+        elements: [{ type: "mrkdwn", text: `📝 ${friendlyDate(meta.date)} — every field is optional` }],
       },
-    })),
+      { type: "divider" },
+      ...standup.questions.map((question, i) => ({
+        type: "input",
+        block_id: `q_${i}`,
+        optional: true,
+        label: { type: "plain_text", text: question.slice(0, 150) },
+        element: {
+          type: "plain_text_input",
+          action_id: "answer",
+          multiline: true,
+          placeholder: { type: "plain_text", text: "Type your answer…" },
+        },
+      })),
+    ],
   };
 }
 
@@ -143,13 +197,23 @@ export function replyMessage(
   questions: string[],
   answers: string[],
 ): { text: string; blocks: unknown[] } {
+  const blockerIdx = blockerQuestionIndex(questions);
   const qa = questions
-    .map((question, i) => ({ question, answer: answers[i]?.trim() ?? "" }))
+    .map((question, i) => ({
+      question,
+      answer: answers[i]?.trim() ?? "",
+      isBlocker: i === blockerIdx && isBlockerAnswer(answers[i]?.trim() ?? ""),
+    }))
     .filter(({ answer }) => answer.length > 0);
 
   const body =
     qa.length > 0
-      ? qa.map(({ question, answer }) => `*${question}*\n${answer}`).join("\n\n")
+      ? qa
+          .map(
+            ({ question, answer, isBlocker }) =>
+              `${isBlocker ? "🚫 " : ""}*${question}*\n${answer}`,
+          )
+          .join("\n\n")
       : "_No details shared._";
 
   // Both the notification `text` fallback (mobile push, screen readers) and the
@@ -173,10 +237,18 @@ export function shiftAnnounceMessage(
   assignee: string,
   date: string,
 ): { text: string; blocks: unknown[] } {
-  const text = `🔄 *${rotation.name}* — ${mention(assignee)} is on duty starting ${friendlyDate(date)}.`;
   return {
     text: `${rotation.name}: ${mention(assignee)} is on duty starting ${friendlyDate(date)}`,
-    blocks: [{ type: "section", text: { type: "mrkdwn", text } }],
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `🔄 *${rotation.name}*\n${mention(assignee)} is on duty starting ${friendlyDate(date)}.`,
+        },
+      },
+      { type: "context", elements: [{ type: "mrkdwn", text: `Rotates ${rotation.cadence}` }] },
+    ],
   };
 }
 
@@ -184,9 +256,16 @@ export function onDutyDmMessage(
   rotation: RotationConfig,
   date: string,
 ): { text: string; blocks: unknown[] } {
-  const text = `📟 You're on duty for *${rotation.name}* starting ${friendlyDate(date)}. Thanks!`;
   return {
     text: `You're on duty for ${rotation.name} starting ${friendlyDate(date)}`,
-    blocks: [{ type: "section", text: { type: "mrkdwn", text } }],
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `📟 You're on duty for *${rotation.name}* starting ${friendlyDate(date)}. Thanks!`,
+        },
+      },
+    ],
   };
 }
