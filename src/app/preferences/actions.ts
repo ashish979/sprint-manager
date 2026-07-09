@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireSession } from "@/lib/authz";
 import { ensureUserProfile, setOutOfOffice, setPreferredTime } from "@/lib/store/users";
@@ -22,7 +22,7 @@ export async function setPreferredTimeAction(formData: FormData): Promise<void> 
   // Guarantee the row is fully populated before a targeted field update.
   await ensureUserProfile(userId);
   await setPreferredTime(userId, raw || undefined);
-  revalidatePath("/preferences");
+  redirect("/preferences?saved=time");
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -40,7 +40,7 @@ export async function setOutOfOfficeAction(formData: FormData): Promise<void> {
 
   await ensureUserProfile(userId);
   await setOutOfOffice(userId, { from, to });
-  revalidatePath("/preferences");
+  redirect("/preferences?saved=ooo");
 }
 
 export async function clearOutOfOfficeAction(): Promise<void> {
@@ -49,5 +49,5 @@ export async function clearOutOfOfficeAction(): Promise<void> {
   if (!userId) throw new Error("no slack user id on session");
 
   await setOutOfOffice(userId, undefined);
-  revalidatePath("/preferences");
+  redirect("/preferences?saved=ooo-cleared");
 }

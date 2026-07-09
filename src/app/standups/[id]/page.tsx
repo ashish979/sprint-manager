@@ -14,11 +14,26 @@ import { deleteStandupAction, sendReminderAction, startNowAction } from "../acti
 export const dynamic = "force-dynamic";
 
 const STATUS_BADGE: Record<ReportStatus, { label: string; class: string }> = {
-  submitted: { label: "✅ submitted", class: "bg-green-100 text-green-800" },
-  pending: { label: "⏳ pending", class: "bg-yellow-100 text-yellow-800" },
-  skipped: { label: "🏖 skipped", class: "bg-gray-100 text-gray-600" },
-  missed: { label: "❌ missed", class: "bg-red-100 text-red-700" },
-  ooo: { label: "🌴 out of office", class: "bg-blue-100 text-blue-800" },
+  submitted: {
+    label: "✅ submitted",
+    class: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+  },
+  pending: {
+    label: "⏳ pending",
+    class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300",
+  },
+  skipped: {
+    label: "🏖 skipped",
+    class: "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300",
+  },
+  missed: {
+    label: "❌ missed",
+    class: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+  },
+  ooo: {
+    label: "🌴 out of office",
+    class: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
+  },
 };
 
 function todayUtc(): string {
@@ -55,7 +70,7 @@ export default async function StandupDetailPage({
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <Link href="/standups" className="text-sm text-gray-500 underline">
+      <Link href="/standups" className="text-sm text-zinc-500 underline dark:text-zinc-400">
         ← All standups
       </Link>
 
@@ -65,19 +80,19 @@ export default async function StandupDetailPage({
           <div className="flex gap-2">
             <Link
               href={`/standups/${standup.id}/edit`}
-              className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50"
+              className="rounded border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
             >
               Edit
             </Link>
             <form action={startNowAction}>
               <input type="hidden" name="id" value={standup.id} />
-              <button className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
+              <button className="rounded border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
                 Start now
               </button>
             </form>
             <form action={deleteStandupAction}>
               <input type="hidden" name="id" value={standup.id} />
-              <button className="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+              <button className="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950">
                 Delete
               </button>
             </form>
@@ -85,7 +100,7 @@ export default async function StandupDetailPage({
         )}
       </div>
 
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
         {standup.time} local · reminds every {standup.remindAfterMinutes} min ×
         {standup.maxReminders} · closes {standup.closeAtTime} · channel{" "}
         <code>{standup.channel}</code>
@@ -100,9 +115,11 @@ export default async function StandupDetailPage({
           type="date"
           name="date"
           defaultValue={date}
-          className="rounded border px-2 py-1 text-sm"
+          className="rounded border px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
-        <button className="rounded border px-3 py-1 text-sm hover:bg-gray-50">Go</button>
+        <button className="rounded border px-3 py-1 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+          Go
+        </button>
       </form>
 
       <ul className="mt-4 space-y-4">
@@ -111,7 +128,7 @@ export default async function StandupDetailPage({
           const status: ReportStatus = report?.status ?? "pending";
           const badge = STATUS_BADGE[status];
           return (
-            <li key={userId} className="rounded border p-4">
+            <li key={userId} className="rounded border p-4 dark:border-zinc-800">
               <div className="flex items-center justify-between">
                 <span className="font-medium">{nameOf(userId)}</span>
                 <span className={`rounded px-2 py-0.5 text-xs ${badge.class}`}>
@@ -128,7 +145,7 @@ export default async function StandupDetailPage({
                   <input type="hidden" name="standupId" value={standup.id} />
                   <input type="hidden" name="date" value={date} />
                   <input type="hidden" name="userId" value={userId} />
-                  <button className="rounded border px-2 py-1 text-xs hover:bg-gray-50">
+                  <button className="rounded border px-2 py-1 text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
                     Remind ({report.remindersSent} sent)
                   </button>
                 </form>
@@ -140,14 +157,18 @@ export default async function StandupDetailPage({
 
       {standup.anonymous && (
         <section className="mt-6">
-          <h2 className="text-sm font-semibold text-gray-500">Responses (anonymous)</h2>
+          <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+            Responses (anonymous)
+          </h2>
           <ul className="mt-2 space-y-4">
             {reports
               .filter((r) => r.status === "submitted")
               .sort((a, b) => (a.submittedAt ?? "").localeCompare(b.submittedAt ?? ""))
               .map((report, i) => (
-                <li key={report.userId} className="rounded border p-4">
-                  <div className="text-sm font-medium text-gray-500">Response {i + 1}</div>
+                <li key={report.userId} className="rounded border p-4 dark:border-zinc-800">
+                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    Response {i + 1}
+                  </div>
                   <AnswerList standup={standup} report={report} blockerIdx={blockerIdx} />
                 </li>
               ))}
@@ -175,10 +196,12 @@ function AnswerList({
         const blocker = i === blockerIdx && isBlockerAnswer(answer);
         return (
           <div key={i}>
-            <dt className="text-xs font-medium text-gray-500">{question}</dt>
+            <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{question}</dt>
             <dd
               className={`mt-0.5 whitespace-pre-wrap text-sm ${
-                blocker ? "rounded bg-red-50 p-2 font-medium text-red-800" : ""
+                blocker
+                  ? "rounded bg-red-50 p-2 font-medium text-red-800 dark:bg-red-950 dark:text-red-300"
+                  : ""
               }`}
             >
               {blocker && "🚫 "}

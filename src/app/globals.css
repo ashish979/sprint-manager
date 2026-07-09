@@ -3,6 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark gray (zinc-900), not near-black — matches the zinc-800 card/border
+       scale used across pages via Tailwind's dark: classes. */
+    --background: #18181b;
+    --foreground: #f4f4f5;
+    color-scheme: dark;
+  }
 }
 
 @theme inline {
@@ -10,13 +21,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
