@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { isAdminSession } from "@/lib/authz";
+import { listUserOptions } from "@/lib/slack/directory";
 
 import { createRotationAction } from "../actions";
 import { RotationForm } from "../_components/rotation-form";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewRotationPage() {
   if (!(await isAdminSession())) redirect("/rotations");
+  const users = await listUserOptions();
 
   return (
     <main className="mx-auto max-w-2xl p-8">
@@ -19,7 +21,7 @@ export default async function NewRotationPage() {
 
       <h1 className="mt-2 text-2xl font-bold">New rotation</h1>
 
-      <RotationForm action={createRotationAction} submitLabel="Create rotation" />
+      <RotationForm action={createRotationAction} submitLabel="Create rotation" users={users} />
     </main>
   );
 }

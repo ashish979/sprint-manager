@@ -1,3 +1,5 @@
+import { ParticipantPicker } from "@/app/_components/participant-picker";
+import type { UserOption } from "@/lib/slack/directory";
 import { ROTATION_DEFAULTS, type RotationConfig } from "@/lib/types";
 
 /** Shared create/edit form for a rotation — see new/page.tsx and [id]/edit/page.tsx. */
@@ -18,11 +20,24 @@ export function RotationForm({
   action,
   rotation,
   submitLabel,
+  users,
 }: {
   action: (formData: FormData) => Promise<void>;
   rotation?: RotationConfig;
   submitLabel: string;
+  /** null when the Slack lookup is unavailable — the picker is simply omitted. */
+  users?: UserOption[] | null;
 }) {
+  // Mirrors the standup form's participants split: the picker (when available)
+  // is the editable source of truth for known members, pre-checked in rotation
+  // order; the id textarea drops to "add someone the picker doesn't show."
+  const currentMembers =
+    rotation?.members.map((id) => ({
+      value: id,
+      label: users?.find((u) => u.id === id)?.name ?? id,
+    })) ?? [];
+  const membersTextareaDefault = users ? "" : rotation?.members.join(" ");
+
   return (
     <form action={action} className="mt-6">
       {rotation && <input type="hidden" name="id" value={rotation.id} />}
@@ -49,13 +64,25 @@ export function RotationForm({
         />
       </label>
 
+      {users && (
+        <div className={labelClass}>
+          Members — in rotation order
+          <ParticipantPicker
+            name="membersPicker"
+            options={users.map((u) => ({ value: u.id, label: u.name }))}
+            defaultSelected={currentMembers}
+          />
+        </div>
+      )}
+
       <label className={labelClass}>
-        Members — Slack user ids, in rotation order, space/comma separated
+        {users
+          ? "Add someone not showing up above, by Slack user id (optional)"
+          : "Members — Slack user ids, in rotation order, space/comma separated"}
         <textarea
           name="members"
-          required
           rows={2}
-          defaultValue={rotation?.members.join(" ")}
+          defaultValue={membersTextareaDefault}
           placeholder="U0123ABC U0456DEF U0789GHI"
           className={inputClass}
         />
