@@ -24,12 +24,15 @@ interface Option {
 export function ParticipantPicker({
   name,
   options,
+  defaultSelected = [],
 }: {
   name: string;
   options: Option[];
+  /** Pre-checks these as already-selected — e.g. a standup's current participants when editing. */
+  defaultSelected?: Option[];
 }) {
   const [mounted, setMounted] = useState(false);
-  const [selected, setSelected] = useState<MultiValue<Option>>([]);
+  const [selected, setSelected] = useState<MultiValue<Option>>(defaultSelected);
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {

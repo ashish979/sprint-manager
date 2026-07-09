@@ -44,6 +44,18 @@ export function StandupForm({
   const template = templateId ? STANDUP_TEMPLATES.find((t) => t.id === templateId) : undefined;
   const questionsDefault = template?.questions ?? standup?.questions ?? DEFAULT_QUESTIONS;
 
+  // When the picker is available, it becomes the one place that shows (and can
+  // remove) the current roster — so it's pre-checked with today's participants,
+  // and the id textarea starts empty (kept only for ids the directory can't
+  // resolve). If the Slack lookup failed, the picker doesn't render at all, so
+  // the textarea falls back to carrying the current participants itself.
+  const currentParticipants =
+    standup?.participants.map((id) => ({
+      value: id,
+      label: users?.find((u) => u.id === id)?.name ?? id,
+    })) ?? [];
+  const participantsTextareaDefault = users ? "" : standup?.participants.join(" ");
+
   return (
     <form action={action} className="mt-6">
       {standup && <input type="hidden" name="id" value={standup.id} />}
@@ -73,26 +85,29 @@ export function StandupForm({
           />
         </label>
 
+        {users && (
+          <div className={labelClass}>
+            Participants
+            <ParticipantPicker
+              name="participantsPicker"
+              options={users.map((u) => ({ value: u.id, label: u.name }))}
+              defaultSelected={currentParticipants}
+            />
+          </div>
+        )}
+
         <label className={labelClass}>
-          Participants — Slack user ids, space/comma separated
+          {users
+            ? "Add someone not showing up above, by Slack user id (optional)"
+            : "Participants — Slack user ids, space/comma separated"}
           <textarea
             name="participants"
             rows={2}
-            defaultValue={standup?.participants.join(" ")}
+            defaultValue={participantsTextareaDefault}
             placeholder="U0123ABC U0456DEF"
             className={inputClass}
           />
         </label>
-
-        {users && (
-          <div className={labelClass}>
-            Or search and select people (adds to the ids above)
-            <ParticipantPicker
-              name="participantsPicker"
-              options={users.map((u) => ({ value: u.id, label: u.name }))}
-            />
-          </div>
-        )}
       </section>
 
       <section className={sectionClass}>
