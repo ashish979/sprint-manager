@@ -4,6 +4,8 @@ import Link from "next/link";
 import { signIn, signOut } from "@/auth";
 import { getSession } from "@/lib/session";
 
+import { CursorGlow } from "./_components/cursor-glow";
+
 // Session-dependent; never prerender (also keeps builds env-free).
 export const dynamic = "force-dynamic";
 
@@ -14,8 +16,9 @@ export default async function Home() {
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-8 text-center">
       <div
         aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[560px] w-[840px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#4A154B]/10 blur-3xl dark:bg-[#4A154B]/20"
+        className="glow-drift pointer-events-none absolute left-1/2 top-1/2 h-[560px] w-[840px] rounded-full bg-[#4A154B]/15 blur-3xl dark:bg-[#4A154B]/28"
       />
+      <CursorGlow />
 
       <div className="relative flex flex-col items-center gap-8">
         <div className="flex items-center gap-3">
@@ -24,6 +27,7 @@ export default async function Home() {
             alt="Sprint Manager logo"
             width={44}
             height={44}
+            unoptimized
             className="h-11 w-11 rounded-xl object-cover"
           />
           <h1 className="text-4xl font-bold tracking-tight">Sprint Manager</h1>
