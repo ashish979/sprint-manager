@@ -149,16 +149,16 @@ export function anchorMessage(
 
   let summary: string;
   if (dayStatus === "closed") {
-    summary = `🏁 Closed — ${submitted.length}/${standup.participants.length} responded`;
-    if (missed.length > 0) summary += `, ${missed.length} missed`;
-    if (skipped.length > 0) summary += `, ${skipped.length} skipped`;
-    if (ooo.length > 0) summary += `, ${ooo.length} OOO`;
+    summary = `🏁 Closed — *${submitted.length}/${standup.participants.length}* responded`;
+    if (missed.length > 0) summary += `, *${missed.length}* missed`;
+    if (skipped.length > 0) summary += `, *${skipped.length}* skipped`;
+    if (ooo.length > 0) summary += `, *${ooo.length}* OOO`;
   } else if (waiting.length === 0) {
-    summary = `✅ Everyone's in — ${submitted.length} responded${
-      skipped.length > 0 ? `, ${skipped.length} skipped` : ""
-    }${ooo.length > 0 ? `, ${ooo.length} OOO` : ""}`;
+    summary = `✅ Everyone's in — *${submitted.length}* responded${
+      skipped.length > 0 ? `, *${skipped.length}* skipped` : ""
+    }${ooo.length > 0 ? `, *${ooo.length}* OOO` : ""}`;
   } else {
-    summary = `⏳ ${submitted.length}/${standup.participants.length} responded — waiting on ${waiting
+    summary = `⏳ *${submitted.length}/${standup.participants.length}* responded — waiting on ${waiting
       .map(mention)
       .join(", ")}`;
   }
@@ -171,6 +171,7 @@ export function anchorMessage(
       { type: "divider" },
       { type: "section", text: { type: "mrkdwn", text: roster } },
       { type: "context", elements: [{ type: "mrkdwn", text: summary }] },
+      { type: "context", elements: [{ type: "mrkdwn", text: "💬 Answers post in this thread" }] },
     ],
   };
 }
@@ -271,12 +272,25 @@ export function answersFromView(
 
 // --- Threaded reply under the anchor ---
 
+/** Cycles per question, like Geekbot's alternating quote-bar colors. */
+const REPLY_COLORS = ["#36C5AB", "#ECB22E", "#4A90D9", "#9B59B6", "#2EB67D"];
+const BLOCKER_COLOR = "#E01E5A";
+
+/** Multi-line answers read as a bulleted list; single-line ones stay plain. */
+function formatAnswerBody(answer: string): string {
+  const lines = answer
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  return lines.length > 1 ? lines.map((l) => `• ${l}`).join("\n") : answer.trim();
+}
+
 export function replyMessage(
   standup: Pick<StandupConfig, "anonymous">,
   userId: string,
   questions: QuestionConfig[],
   answers: string[],
-): { text: string; blocks: unknown[] } {
+): { text: string; blocks: unknown[]; attachments: unknown[] } {
   const blockerIdx = blockerQuestionIndex(questions);
   const qa = questions
     .map((question, i) => ({
@@ -286,27 +300,31 @@ export function replyMessage(
     }))
     .filter(({ answer }) => answer.length > 0);
 
-  const body =
-    qa.length > 0
-      ? qa
-          .map(
-            ({ question, answer, isBlocker }) =>
-              `${isBlocker ? "🚫 " : ""}*${question}*\n${answer}`,
-          )
-          .join("\n\n")
-      : "_No details shared._";
-
   // Both the notification `text` fallback (mobile push, screen readers) and the
   // visible block must avoid leaking identity when anonymous.
-  const header = standup.anonymous ? "🙈 Anonymous response" : mention(userId);
+  const header = standup.anonymous ? "🙈 *Anonymous response*" : `*${mention(userId)} posted an update*`;
+
   return {
     text: standup.anonymous ? "Someone posted their standup" : `${mention(userId)} posted their standup`,
     blocks: [
-      {
-        type: "section",
-        text: { type: "mrkdwn", text: `${header}\n\n${body}`.slice(0, 2900) },
-      },
+      { type: "section", text: { type: "mrkdwn", text: header } },
+      ...(qa.length === 0
+        ? [{ type: "section", text: { type: "mrkdwn", text: "_No details shared._" } }]
+        : []),
     ],
+    // One colored bar per question — mirrors Geekbot's per-question quote styling.
+    attachments: qa.map(({ question, answer, isBlocker }, i) => ({
+      color: isBlocker ? BLOCKER_COLOR : REPLY_COLORS[i % REPLY_COLORS.length],
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `${isBlocker ? "🚫 " : ""}*${question}*\n${formatAnswerBody(answer)}`.slice(0, 2900),
+          },
+        },
+      ],
+    })),
   };
 }
 

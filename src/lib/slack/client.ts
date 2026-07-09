@@ -43,6 +43,8 @@ export interface MessageArgs {
   channel: string;
   text: string;
   blocks?: unknown[];
+  /** Classic colored side-bar per item — used for the per-question reply breakdown. */
+  attachments?: unknown[];
   thread_ts?: string;
 }
 
