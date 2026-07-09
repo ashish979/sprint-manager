@@ -21,13 +21,18 @@ export default async function NewStandupPage({
     <main className="mx-auto max-w-2xl p-8">
       <h1 className="text-2xl font-bold">New standup</h1>
 
-      <div className="mt-4 flex gap-2">
+      <p className="mt-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+        Start from a template
+      </p>
+      <div className="mt-2 flex gap-2">
         {STANDUP_TEMPLATES.map((t) => (
           <Link
             key={t.id}
             href={`/standups/new?template=${t.id}`}
-            className={`rounded border px-3 py-1 text-sm ${
-              template === t.id ? "bg-black text-white" : "hover:bg-gray-50"
+            className={`rounded border px-3 py-1 text-sm dark:border-zinc-700 ${
+              template === t.id
+                ? "bg-black text-white dark:bg-white dark:text-black"
+                : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
             }`}
           >
             {t.label}

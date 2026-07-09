@@ -13,10 +13,18 @@ import { deleteRotationAction, queueOverrideAction, rotateNowAction } from "../a
 export const dynamic = "force-dynamic";
 
 const SOURCE_BADGE: Record<ShiftSource, { label: string; class: string }> = {
-  auto: { label: "auto", class: "bg-gray-100 text-gray-600" },
-  override: { label: "override", class: "bg-amber-100 text-amber-800" },
-  swap: { label: "swap", class: "bg-blue-100 text-blue-800" },
+  auto: { label: "auto", class: "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300" },
+  override: {
+    label: "override",
+    class: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  },
+  swap: { label: "swap", class: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
 };
+
+const secondaryButtonClass =
+  "rounded border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800";
+const smallInputClass =
+  "mt-1 rounded border px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
 
 export default async function RotationDetailPage({
   params,
@@ -42,7 +50,7 @@ export default async function RotationDetailPage({
 
   return (
     <main className="mx-auto max-w-3xl p-8">
-      <Link href="/rotations" className="text-sm text-gray-500 underline">
+      <Link href="/rotations" className="text-sm text-zinc-500 underline dark:text-zinc-400">
         ← All rotations
       </Link>
 
@@ -52,13 +60,11 @@ export default async function RotationDetailPage({
           <div className="flex gap-2">
             <form action={rotateNowAction}>
               <input type="hidden" name="id" value={rotation.id} />
-              <button className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
-                Rotate now
-              </button>
+              <button className={secondaryButtonClass}>Rotate now</button>
             </form>
             <form action={deleteRotationAction}>
               <input type="hidden" name="id" value={rotation.id} />
-              <button className="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50">
+              <button className="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950">
                 Delete
               </button>
             </form>
@@ -66,7 +72,7 @@ export default async function RotationDetailPage({
         )}
       </div>
 
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
         {rotation.cadence} · channel <code>{rotation.channel}</code>
         {rotation.usergroupId && (
           <>
@@ -76,13 +82,17 @@ export default async function RotationDetailPage({
         )}
       </p>
 
-      <div className="mt-6 rounded border p-4">
-        <p className="text-sm font-medium text-gray-500">On duty</p>
+      <div className="mt-6 rounded border p-4 dark:border-zinc-800">
+        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">On duty</p>
         <p className="mt-1 text-lg">
           {current ? nameOf(current.assignee) : "not rotated yet"}
-          {current && <span className="ml-2 text-sm text-gray-500">since {current.startDate}</span>}
+          {current && (
+            <span className="ml-2 text-sm text-zinc-500 dark:text-zinc-400">
+              since {current.startDate}
+            </span>
+          )}
         </p>
-        <p className="mt-2 text-sm text-gray-500">Next up: {nameOf(next)}</p>
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Next up: {nameOf(next)}</p>
       </div>
 
       <h2 className="mt-8 text-lg font-semibold">Members</h2>
@@ -97,7 +107,7 @@ export default async function RotationDetailPage({
       {admin && (
         <>
           <h2 className="mt-8 text-lg font-semibold">Queue an override</h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             Assign a specific person to a future shift — takes effect at the next tick and
             doesn&apos;t disturb the round-robin order.
           </p>
@@ -105,12 +115,7 @@ export default async function RotationDetailPage({
             <input type="hidden" name="rotationId" value={rotation.id} />
             <label className="text-sm font-medium">
               Date
-              <input
-                type="date"
-                name="date"
-                required
-                className="mt-1 rounded border px-2 py-1 text-sm"
-              />
+              <input type="date" name="date" required className={smallInputClass} />
             </label>
             <label className="text-sm font-medium">
               Assignee (Slack user id)
@@ -118,19 +123,19 @@ export default async function RotationDetailPage({
                 name="assignee"
                 required
                 placeholder="U0123ABC"
-                className="mt-1 rounded border px-2 py-1 text-sm"
+                className={smallInputClass}
               />
             </label>
-            <button className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50">Queue</button>
+            <button className={secondaryButtonClass}>Queue</button>
           </form>
         </>
       )}
 
       <h2 className="mt-8 text-lg font-semibold">History</h2>
       {history.length === 0 ? (
-        <p className="mt-2 text-sm text-gray-500">No shifts yet.</p>
+        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">No shifts yet.</p>
       ) : (
-        <ul className="mt-2 divide-y rounded border text-sm">
+        <ul className="mt-2 divide-y rounded border text-sm dark:divide-zinc-800 dark:border-zinc-800">
           {history.map((s) => (
             <li key={s.startDate} className="flex items-center justify-between p-3">
               <span>
