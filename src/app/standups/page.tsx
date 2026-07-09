@@ -4,6 +4,7 @@ import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { ensureChannelInfo } from "@/lib/store/channels";
 import { listStandups } from "@/lib/store/standups";
+import { formatTime12h } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -56,14 +57,17 @@ export default async function StandupsPage() {
             <li key={s.id}>
               <Link
                 href={`/standups/${s.id}`}
-                className="flex items-baseline justify-between gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                className="flex items-center justify-between gap-6 p-5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
               >
-                <div className="min-w-0 flex-1 truncate">
-                  <span className="font-medium">{s.name}</span>
-                  <span className="ml-3 text-sm text-zinc-500 dark:text-zinc-400">
-                    #{channelNameById.get(s.channel) ?? s.channel} · {s.time} local ·{" "}
-                    {s.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}
-                  </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{s.name}</div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    <span>#{channelNameById.get(s.channel) ?? s.channel}</span>
+                    <span aria-hidden>·</span>
+                    <span>{formatTime12h(s.time)}</span>
+                    <span aria-hidden>·</span>
+                    <span>{s.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}</span>
+                  </div>
                 </div>
                 <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
                   {s.participants.length} participant{s.participants.length === 1 ? "" : "s"}
