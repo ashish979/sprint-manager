@@ -17,6 +17,9 @@ export default async function NewStandupPage({
 }) {
   if (!(await isAdminSession())) redirect("/standups");
   const [{ template }, users] = await Promise.all([searchParams, listUserOptions()]);
+  // "Daily Standup" is the implicit default template — make that explicit so
+  // its pill shows as selected instead of landing with nothing highlighted.
+  const activeTemplate = template ?? "daily";
 
   return (
     <main className="mx-auto max-w-2xl p-8">
@@ -31,7 +34,7 @@ export default async function NewStandupPage({
             key={t.id}
             href={`/standups/new?template=${t.id}`}
             className={`rounded border px-3 py-1 text-sm dark:border-zinc-700 ${
-              template === t.id
+              activeTemplate === t.id
                 ? "bg-black text-white dark:bg-white dark:text-black"
                 : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
             }`}
@@ -43,7 +46,7 @@ export default async function NewStandupPage({
 
       <StandupForm
         action={createStandupAction}
-        templateId={template}
+        templateId={activeTemplate}
         submitLabel="Create standup"
         users={users}
       />
