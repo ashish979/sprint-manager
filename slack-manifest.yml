@@ -17,6 +17,11 @@ features:
       description: Who's on duty / who's next
       usage_hint: who <rotation-name>
       should_escape: false
+    - command: /standup
+      url: https://<BASE_URL>/api/slack/commands
+      description: Standup admin actions
+      usage_hint: remind <standup-name>
+      should_escape: false
 oauth_config:
   redirect_urls:
     # Auth.js (Sign in with Slack) callback — Slack requires HTTPS.
