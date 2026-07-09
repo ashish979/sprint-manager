@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Sprint Manager",
-  description: "Async standups & duty rotations — Slack-first, in-house.",
+  description: "Standups and duty rotations for your team, right inside Slack.",
 };
 
 export default function RootLayout({
