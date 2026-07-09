@@ -1,6 +1,8 @@
 import type { UserOption } from "@/lib/slack/directory";
 import { DEFAULT_QUESTIONS, STANDUP_DEFAULTS, STANDUP_TEMPLATES, type StandupConfig } from "@/lib/types";
 
+import { ParticipantPicker } from "./participant-picker";
+
 /** Shared create/edit form for a standup — see new/page.tsx and [id]/edit/page.tsx. */
 
 const WEEKDAYS = [
@@ -83,20 +85,13 @@ export function StandupForm({
         </label>
 
         {users && (
-          <label className={labelClass}>
+          <div className={labelClass}>
             Or search and select people (adds to the ids above)
-            <select name="participantsPicker" multiple size={6} className={inputClass}>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-            <span className="mt-1 block text-xs font-normal text-zinc-500 dark:text-zinc-400">
-              Type a name to jump to it; Cmd/Ctrl-click (or shift-click for a range) to select
-              multiple.
-            </span>
-          </label>
+            <ParticipantPicker
+              name="participantsPicker"
+              options={users.map((u) => ({ value: u.id, label: u.name }))}
+            />
+          </div>
         )}
       </section>
 
