@@ -28,3 +28,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Tailwind's preflight leaves <button> at the browser default (non-pointer)
+   cursor — links get "pointer" natively, buttons don't unless told to. */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
