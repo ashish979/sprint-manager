@@ -29,6 +29,20 @@ export async function getShift(
   return res.Item as Shift | undefined;
 }
 
+/**
+ * Unconditional overwrite — for reassigning a shift already in progress (e.g.
+ * "assign to next in queue"). Unlike createShiftIfAbsent, this has no
+ * idempotency guard; it's for a deliberate one-off admin action, not the tick.
+ */
+export async function putShift(shift: Shift): Promise<void> {
+  await db.send(
+    new PutCommand({
+      TableName: env.tableName,
+      Item: { ...shiftKey(shift.rotationId, shift.startDate), ...shift },
+    }),
+  );
+}
+
 /** Returns true if this call created the shift (caller then advances the rotation). */
 export async function createShiftIfAbsent(shift: Shift): Promise<boolean> {
   try {
