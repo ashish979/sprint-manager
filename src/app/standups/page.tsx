@@ -3,12 +3,29 @@ import Link from "next/link";
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { ensureChannelInfo } from "@/lib/store/channels";
+import { getDay } from "@/lib/store/reports";
 import { listStandups } from "@/lib/store/standups";
 import { formatTime12h } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+const STATUS_BADGE = {
+  closed: { label: "Closed", className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300" },
+  open: {
+    label: "In progress",
+    className: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+  },
+  notStarted: {
+    label: "Not started",
+    className: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500",
+  },
+} as const;
 
 export default async function StandupsPage() {
   const session = await getSession();
@@ -32,6 +49,12 @@ export default async function StandupsPage() {
   const uniqueChannelIds = [...new Set(standups.map((s) => s.channel))];
   const channelInfos = await Promise.all(uniqueChannelIds.map((id) => ensureChannelInfo(id)));
   const channelNameById = new Map(uniqueChannelIds.map((id, i) => [id, channelInfos[i]?.name]));
+
+  const today = todayUtc();
+  const todaysDays = await Promise.all(standups.map((s) => getDay(s.id, today)));
+  const statusById = new Map(
+    standups.map((s, i) => [s.id, todaysDays[i] ? todaysDays[i]!.status : "notStarted"] as const),
+  );
 
   return (
     <main className="mx-auto max-w-3xl p-8">
@@ -69,9 +92,16 @@ export default async function StandupsPage() {
                     <span>{s.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}</span>
                   </div>
                 </div>
-                <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
-                  {s.participants.length} participant{s.participants.length === 1 ? "" : "s"}
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[statusById.get(s.id) ?? "notStarted"].className}`}
+                  >
+                    {STATUS_BADGE[statusById.get(s.id) ?? "notStarted"].label}
+                  </span>
+                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                    {s.participants.length} participant{s.participants.length === 1 ? "" : "s"}
+                  </span>
+                </div>
               </Link>
             </li>
           ))}
