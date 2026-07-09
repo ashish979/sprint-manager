@@ -12,7 +12,14 @@ export async function Nav() {
   return (
     <nav className="flex items-center justify-between border-b border-zinc-200 px-6 py-3 dark:border-zinc-800">
       <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
-        <Image src="/logo.png" alt="" width={24} height={24} className="h-6 w-6 rounded-md object-cover" />
+        <Image
+          src="/logo.png"
+          alt=""
+          width={24}
+          height={24}
+          unoptimized
+          className="h-6 w-6 rounded-md object-cover"
+        />
         Sprint Manager
       </Link>
       <div className="flex items-center gap-5 text-sm text-zinc-600 dark:text-zinc-400">
