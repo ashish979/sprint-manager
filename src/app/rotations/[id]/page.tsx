@@ -64,6 +64,9 @@ export default async function RotationDetailPage({
         <h1 className="text-2xl font-bold">{rotation.name}</h1>
         {admin && (
           <div className="flex gap-2">
+            <Link href={`/rotations/${rotation.id}/edit`} className={secondaryButtonClass}>
+              Edit
+            </Link>
             <form action={rotateNowAction}>
               <input type="hidden" name="id" value={rotation.id} />
               <button className={secondaryButtonClass}>Rotate now</button>
