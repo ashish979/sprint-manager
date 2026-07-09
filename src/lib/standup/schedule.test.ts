@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { LocalParts } from "@/lib/tz";
 
-import { isPromptDue, pendingReportAction } from "./schedule";
+import { isOutOfOffice, isPromptDue, pendingReportAction } from "./schedule";
 
 const config = {
   time: "09:30",
@@ -101,5 +101,27 @@ describe("pendingReportAction", () => {
         now: at("2026-07-08T19:00:00Z"),
       }),
     ).toEqual({ type: "miss" });
+  });
+});
+
+describe("isOutOfOffice", () => {
+  const range = { from: "2026-07-10", to: "2026-07-15" };
+
+  it("is false with no range set", () => {
+    expect(isOutOfOffice("2026-07-12", undefined)).toBe(false);
+  });
+
+  it("is true on the boundary dates, inclusive", () => {
+    expect(isOutOfOffice("2026-07-10", range)).toBe(true);
+    expect(isOutOfOffice("2026-07-15", range)).toBe(true);
+  });
+
+  it("is true inside the range", () => {
+    expect(isOutOfOffice("2026-07-12", range)).toBe(true);
+  });
+
+  it("is false outside the range", () => {
+    expect(isOutOfOffice("2026-07-09", range)).toBe(false);
+    expect(isOutOfOffice("2026-07-16", range)).toBe(false);
   });
 });

@@ -27,6 +27,7 @@ export function anchorMessage(
   const submitted = byStatus("submitted");
   const skipped = byStatus("skipped");
   const missed = byStatus("missed");
+  const ooo = byStatus("ooo");
   const resolved = new Set(reports.filter((r) => r.status !== "pending").map((r) => r.userId));
   const waiting = standup.participants.filter((u) => !resolved.has(u));
 
@@ -35,10 +36,11 @@ export function anchorMessage(
     status = `🏁 Closed — ${submitted.length}/${standup.participants.length} responded`;
     if (missed.length > 0) status += `, ${missed.length} missed`;
     if (skipped.length > 0) status += `, ${skipped.length} skipped`;
+    if (ooo.length > 0) status += `, ${ooo.length} OOO`;
   } else if (waiting.length === 0) {
     status = `✅ Everyone is in — ${submitted.length} responded${
       skipped.length > 0 ? `, ${skipped.length} skipped` : ""
-    }`;
+    }${ooo.length > 0 ? `, ${ooo.length} OOO` : ""}`;
   } else {
     status = `⏳ ${submitted.length}/${standup.participants.length} responded — waiting on ${waiting
       .map(mention)
@@ -136,6 +138,7 @@ export function answersFromView(
 // --- Threaded reply under the anchor ---
 
 export function replyMessage(
+  standup: Pick<StandupConfig, "anonymous">,
   userId: string,
   questions: string[],
   answers: string[],
@@ -149,12 +152,15 @@ export function replyMessage(
       ? qa.map(({ question, answer }) => `*${question}*\n${answer}`).join("\n\n")
       : "_No details shared._";
 
+  // Both the notification `text` fallback (mobile push, screen readers) and the
+  // visible block must avoid leaking identity when anonymous.
+  const header = standup.anonymous ? "🙈 Anonymous response" : mention(userId);
   return {
-    text: `${mention(userId)} posted their standup`,
+    text: standup.anonymous ? "Someone posted their standup" : `${mention(userId)} posted their standup`,
     blocks: [
       {
         type: "section",
-        text: { type: "mrkdwn", text: `${mention(userId)}\n\n${body}`.slice(0, 2900) },
+        text: { type: "mrkdwn", text: `${header}\n\n${body}`.slice(0, 2900) },
       },
     ],
   };

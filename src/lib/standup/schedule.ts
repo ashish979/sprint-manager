@@ -1,5 +1,5 @@
 import { type LocalParts, timeToMinutes } from "@/lib/tz";
-import type { StandupConfig } from "@/lib/types";
+import type { OutOfOfficeRange, StandupConfig } from "@/lib/types";
 
 /**
  * Pure scheduling decisions for the tick sweep (PLAN.md §2.3).
@@ -52,4 +52,10 @@ export function pendingReportAction(opts: {
   }
 
   return { type: "none" };
+}
+
+/** Is `date` (yyyy-mm-dd) inside the participant's active out-of-office window? */
+export function isOutOfOffice(date: string, range?: OutOfOfficeRange): boolean {
+  if (!range) return false;
+  return date >= range.from && date <= range.to;
 }
