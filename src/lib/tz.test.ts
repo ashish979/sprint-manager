@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { friendlyDate, localParts, timeToMinutes } from "./tz";
+import { formatTime12h, friendlyDate, localParts, timeToMinutes } from "./tz";
 
 describe("localParts", () => {
   // 2026-07-08T04:30:00Z = 10:00 IST (UTC+5:30) = 21:30 PDT on Jul 7 (UTC-7)
@@ -44,5 +44,19 @@ describe("timeToMinutes", () => {
 describe("friendlyDate", () => {
   it("formats yyyy-mm-dd", () => {
     expect(friendlyDate("2026-07-08")).toBe("Wed, Jul 8");
+  });
+});
+
+describe("formatTime12h", () => {
+  it("formats morning, noon, midnight, and evening", () => {
+    expect(formatTime12h("09:15")).toBe("9:15 AM");
+    expect(formatTime12h("00:00")).toBe("12:00 AM");
+    expect(formatTime12h("12:00")).toBe("12:00 PM");
+    expect(formatTime12h("19:00")).toBe("7:00 PM");
+    expect(formatTime12h("23:45")).toBe("11:45 PM");
+  });
+
+  it("returns garbage input unchanged", () => {
+    expect(formatTime12h("garbage")).toBe("garbage");
   });
 });

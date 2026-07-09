@@ -50,6 +50,17 @@ export function timeToMinutes(time: string): number {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
+/** "09:15" → "9:15 AM", "19:00" → "7:00 PM". Returns the input unchanged if malformed. */
+export function formatTime12h(time: string): string {
+  const minutes = timeToMinutes(time);
+  if (Number.isNaN(minutes)) return time;
+  const period = minutes < 12 * 60 ? "AM" : "PM";
+  const hour24 = Math.floor(minutes / 60);
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  const mins = String(minutes % 60).padStart(2, "0");
+  return `${hour12}:${mins} ${period}`;
+}
+
 /** Human date for messages: "2026-07-08" → "Wed, Jul 8". */
 export function friendlyDate(date: string): string {
   return new Intl.DateTimeFormat("en-US", {
