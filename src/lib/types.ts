@@ -147,6 +147,8 @@ export interface RotationConfig {
   channel: string;
   /** Slack user group id (S…) kept pointed at the on-duty member. */
   usergroupId?: string;
+  /** Free-text task checklist shown on every announce message (e.g. "handle daily standup"). */
+  notes?: string;
   /**
    * Index into `members` for the next auto-assigned shift. Advances every
    * shift regardless of overrides, so the round-robin stays fair even when

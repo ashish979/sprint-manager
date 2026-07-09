@@ -99,6 +99,17 @@ export function RotationForm({
       </label>
 
       <label className={labelClass}>
+        Notes (optional — a task checklist shown on every announce message)
+        <textarea
+          name="notes"
+          rows={3}
+          defaultValue={rotation?.notes}
+          placeholder={"Handle daily standup\nMaintain sprint board\nTag release notes"}
+          className={inputClass}
+        />
+      </label>
+
+      <label className={labelClass}>
         Cadence
         <select
           name="cadence"
