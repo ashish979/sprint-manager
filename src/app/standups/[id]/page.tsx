@@ -90,6 +90,12 @@ export default async function StandupDetailPage({
   const blockerIdx = blockerQuestionIndex(standup.questions);
   const dayStatus = DAY_STATUS_BADGE[day ? day.status : "notStarted"];
 
+  // "Start now" always prompts for today regardless of which date is being
+  // viewed above — so whether to show it must check today specifically, not
+  // whatever `date` the admin has navigated to via the report date picker.
+  const today = todayUtc();
+  const todayDay = date === today ? day : await getDay(standup.id, today);
+
   return (
     <main className="mx-auto max-w-3xl p-8">
       <Link href="/standups" className="text-sm text-zinc-500 underline dark:text-zinc-400">
@@ -111,12 +117,14 @@ export default async function StandupDetailPage({
             >
               Edit
             </Link>
-            <form action={startNowAction}>
-              <input type="hidden" name="id" value={standup.id} />
-              <button className="rounded border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
-                Start now
-              </button>
-            </form>
+            {!todayDay && (
+              <form action={startNowAction}>
+                <input type="hidden" name="id" value={standup.id} />
+                <button className="rounded border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
+                  Start now
+                </button>
+              </form>
+            )}
             <form action={deleteStandupAction}>
               <input type="hidden" name="id" value={standup.id} />
               <ConfirmSubmitButton
