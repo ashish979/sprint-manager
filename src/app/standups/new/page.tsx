@@ -23,7 +23,11 @@ export default async function NewStandupPage({
 
   return (
     <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-bold">New standup</h1>
+      <Link href="/standups" className="text-sm text-zinc-500 underline dark:text-zinc-400">
+        ← All standups
+      </Link>
+
+      <h1 className="mt-2 text-2xl font-bold">New standup</h1>
 
       <p className="mt-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
         Start from a template

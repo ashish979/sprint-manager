@@ -28,7 +28,11 @@ export default async function EditStandupPage({
 
   return (
     <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-bold">Edit standup</h1>
+      <Link href={`/standups/${id}`} className="text-sm text-zinc-500 underline dark:text-zinc-400">
+        ← {standup.name}
+      </Link>
+
+      <h1 className="mt-2 text-2xl font-bold">Edit standup</h1>
       <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
         Removing a participant marks their currently pending report(s) as skipped so
         today&apos;s standup can still close.

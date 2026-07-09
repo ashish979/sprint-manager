@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { isAdminSession } from "@/lib/authz";
@@ -24,7 +25,11 @@ export default async function NewRotationPage() {
 
   return (
     <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-bold">New rotation</h1>
+      <Link href="/rotations" className="text-sm text-zinc-500 underline dark:text-zinc-400">
+        ← All rotations
+      </Link>
+
+      <h1 className="mt-2 text-2xl font-bold">New rotation</h1>
 
       <form action={createRotationAction} className="mt-6">
         <label className={labelClass}>
