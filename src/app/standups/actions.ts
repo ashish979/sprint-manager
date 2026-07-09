@@ -17,10 +17,23 @@ function parseList(value: string): string[] {
     .filter(Boolean);
 }
 
-function parseLines(value: string): string[] {
-  return value
-    .split("\n")
-    .map((s) => s.trim())
+/**
+ * Participants come from two independent sources — the textarea (ids
+ * typed/pasted directly) and the optional picker (multi-select, when the
+ * Slack directory lookup succeeded) — combined and deduped. Neither
+ * replaces the other; either alone (or both together) is valid.
+ */
+function parseParticipants(formData: FormData): string[] {
+  const typed = parseList(String(formData.get("participants") ?? ""));
+  const picked = formData.getAll("participantsPicker").map(String).filter(Boolean);
+  return [...new Set([...typed, ...picked])];
+}
+
+/** One FormData entry per question row (QuestionsEditor), in order. */
+function parseQuestions(formData: FormData): string[] {
+  return formData
+    .getAll("questions")
+    .map((v) => String(v).trim())
     .filter(Boolean);
 }
 
@@ -29,8 +42,8 @@ export async function createStandupAction(formData: FormData): Promise<void> {
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
-  const participants = parseList(String(formData.get("participants") ?? ""));
-  const questions = parseLines(String(formData.get("questions") ?? ""));
+  const participants = parseParticipants(formData);
+  const questions = parseQuestions(formData);
   const time = String(formData.get("time") ?? STANDUP_DEFAULTS.time);
   const weekdays = formData.getAll("weekdays").map(Number);
 
@@ -85,8 +98,8 @@ export async function updateStandupAction(formData: FormData): Promise<void> {
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
-  const participants = parseList(String(formData.get("participants") ?? ""));
-  const questions = parseLines(String(formData.get("questions") ?? ""));
+  const participants = parseParticipants(formData);
+  const questions = parseQuestions(formData);
   const time = String(formData.get("time") ?? STANDUP_DEFAULTS.time);
   const weekdays = formData.getAll("weekdays").map(Number);
 

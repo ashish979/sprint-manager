@@ -1,4 +1,8 @@
+import type { UserOption } from "@/lib/slack/directory";
 import { DEFAULT_QUESTIONS, STANDUP_DEFAULTS, STANDUP_TEMPLATES, type StandupConfig } from "@/lib/types";
+
+import { ParticipantPicker } from "./participant-picker";
+import { QuestionsEditor } from "./questions-editor";
 
 /** Shared create/edit form for a standup — see new/page.tsx and [id]/edit/page.tsx. */
 
@@ -24,19 +28,21 @@ export function StandupForm({
   standup,
   templateId,
   submitLabel,
+  users,
 }: {
   action: (formData: FormData) => Promise<void>;
   standup?: StandupConfig;
   templateId?: string;
   submitLabel: string;
+  /** null when the Slack lookup is unavailable — the picker is simply omitted. */
+  users?: UserOption[] | null;
 }) {
   const weekdays = standup?.weekdays ?? STANDUP_DEFAULTS.weekdays;
 
   // An explicit ?template= always wins (deliberate intent to replace questions),
   // then an existing standup's own questions, then the plain default.
   const template = templateId ? STANDUP_TEMPLATES.find((t) => t.id === templateId) : undefined;
-  const questionsDefault =
-    template?.questions.join("\n") ?? standup?.questions.join("\n") ?? DEFAULT_QUESTIONS.join("\n");
+  const questionsDefault = template?.questions ?? standup?.questions ?? DEFAULT_QUESTIONS;
 
   return (
     <form action={action} className="mt-6">
@@ -71,26 +77,31 @@ export function StandupForm({
           Participants — Slack user ids, space/comma separated
           <textarea
             name="participants"
-            required
             rows={2}
             defaultValue={standup?.participants.join(" ")}
             placeholder="U0123ABC U0456DEF"
             className={inputClass}
           />
         </label>
+
+        {users && (
+          <div className={labelClass}>
+            Or search and select people (adds to the ids above)
+            <ParticipantPicker
+              name="participantsPicker"
+              options={users.map((u) => ({ value: u.id, label: u.name }))}
+            />
+          </div>
+        )}
       </section>
 
       <section className={sectionClass}>
         <h2 className={sectionHeadingClass}>Questions</h2>
-        <label className={labelClass}>
-          One per line
-          <textarea
-            name="questions"
-            rows={4}
-            defaultValue={questionsDefault}
-            className={inputClass}
-          />
-        </label>
+        <QuestionsEditor
+          key={template?.id ?? standup?.id ?? "default"}
+          name="questions"
+          defaultQuestions={questionsDefault}
+        />
       </section>
 
       <section className={sectionClass}>

@@ -89,6 +89,28 @@ export const slack = {
     return res.channel;
   },
 
+  /** Pages through the full workspace, not just the first 200 members. */
+  async listUsers(): Promise<{ id: string; real_name?: string; name: string }[]> {
+    type Member = { id: string; real_name?: string; name: string; is_bot?: boolean; deleted?: boolean };
+    const all: Member[] = [];
+    let cursor: string | undefined;
+    let pages = 0;
+    const MAX_PAGES = 25; // 5,000 members — a runaway-cursor backstop, not a real limit
+    do {
+      // Small gap between pages — this runs at most once per cache TTL
+      // (see src/lib/slack/directory.ts), but stay polite to a Tier 2 method.
+      if (pages > 0) await new Promise((r) => setTimeout(r, 300));
+      const res = await call<
+        SlackResponse & { members: Member[]; response_metadata?: { next_cursor?: string } }
+      >("users.list", { limit: 200, cursor });
+      all.push(...res.members);
+      cursor = res.response_metadata?.next_cursor || undefined;
+      pages++;
+    } while (cursor && pages < MAX_PAGES);
+    // Slackbot is a special system user not reliably flagged is_bot.
+    return all.filter((m) => !m.is_bot && !m.deleted && m.id !== "USLACKBOT");
+  },
+
   /** For block_actions response_url — replaces the original message. */
   async respond(responseUrl: string, message: { text: string; blocks?: unknown[] }): Promise<void> {
     await fetch(responseUrl, {

@@ -32,7 +32,6 @@ export const DEFAULT_QUESTIONS = [
   "What did you do since last report?",
   "What will you do today?",
   "Any blockers?",
-  "How do you feel?",
 ];
 
 export const STANDUP_DEFAULTS = {
