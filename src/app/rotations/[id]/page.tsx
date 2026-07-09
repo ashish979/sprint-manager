@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
+import { ParticipantPicker } from "@/app/_components/participant-picker";
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
+import { listUserOptions } from "@/lib/slack/directory";
 import { ensureChannelInfo } from "@/lib/store/channels";
 import { getRotation } from "@/lib/store/rotations";
 import { getLatestShift, listShifts } from "@/lib/store/shifts";
@@ -43,11 +45,12 @@ export default async function RotationDetailPage({
   const rotation = await getRotation(id);
   if (!rotation) notFound();
 
-  const [admin, current, history, channelInfo] = await Promise.all([
+  const [admin, current, history, channelInfo, users] = await Promise.all([
     isAdminSession(),
     getLatestShift(rotation.id),
     listShifts(rotation.id),
     ensureChannelInfo(rotation.channel),
+    listUserOptions(),
   ]);
   const profiles = await Promise.all(rotation.members.map((u) => getUserProfile(u)));
   const nameOf = (userId: string) => profiles.find((p) => p?.userId === userId)?.name ?? userId;
@@ -125,14 +128,17 @@ export default async function RotationDetailPage({
               Date
               <input type="date" name="date" required className={smallInputClass} />
             </label>
-            <label className="text-sm font-medium">
-              Assignee (Slack user id)
-              <input
-                name="assignee"
-                required
-                placeholder="U0123ABC"
-                className={smallInputClass}
-              />
+            <label className="min-w-48 text-sm font-medium">
+              Assignee
+              {users ? (
+                <ParticipantPicker
+                  name="assignee"
+                  multi={false}
+                  options={users.map((u) => ({ value: u.id, label: u.name }))}
+                />
+              ) : (
+                <input name="assignee" required placeholder="U0123ABC" className={smallInputClass} />
+              )}
             </label>
             <button className={secondaryButtonClass}>Queue</button>
           </form>

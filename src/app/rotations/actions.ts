@@ -19,12 +19,24 @@ function parseList(value: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Members come from two independent sources — the textarea (ids typed/pasted
+ * directly) and the optional picker (single-select-per-add, when the Slack
+ * directory lookup succeeded) — combined and deduped, same pattern as the
+ * standup form's participants.
+ */
+function parseMembers(formData: FormData): string[] {
+  const typed = parseList(String(formData.get("members") ?? ""));
+  const picked = formData.getAll("membersPicker").map(String).filter(Boolean);
+  return [...new Set([...typed, ...picked])];
+}
+
 export async function createRotationAction(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
-  const members = parseList(String(formData.get("members") ?? ""));
+  const members = parseMembers(formData);
   const usergroupId = String(formData.get("usergroupId") ?? "").trim();
   const cadence = String(formData.get("cadence") ?? ROTATION_DEFAULTS.cadence) as Cadence;
 
@@ -73,7 +85,7 @@ export async function updateRotationAction(formData: FormData): Promise<void> {
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
-  const members = parseList(String(formData.get("members") ?? ""));
+  const members = parseMembers(formData);
   const usergroupId = String(formData.get("usergroupId") ?? "").trim();
   const cadence = String(formData.get("cadence") ?? ROTATION_DEFAULTS.cadence) as Cadence;
 

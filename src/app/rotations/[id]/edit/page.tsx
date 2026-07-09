@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { isAdminSession } from "@/lib/authz";
+import { listUserOptions } from "@/lib/slack/directory";
 import { getRotation } from "@/lib/store/rotations";
 
 import { updateRotationAction } from "../../actions";
@@ -19,6 +20,7 @@ export default async function EditRotationPage({
   const { id } = await params;
   const rotation = await getRotation(id);
   if (!rotation) notFound();
+  const users = await listUserOptions();
 
   return (
     <main className="mx-auto max-w-2xl p-8">
@@ -32,7 +34,12 @@ export default async function EditRotationPage({
         next up.
       </p>
 
-      <RotationForm action={updateRotationAction} rotation={rotation} submitLabel="Save changes" />
+      <RotationForm
+        action={updateRotationAction}
+        rotation={rotation}
+        submitLabel="Save changes"
+        users={users}
+      />
     </main>
   );
 }
