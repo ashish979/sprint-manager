@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { getTeamSettings } from "@/lib/db";
+import { assignNextInQueue } from "@/lib/rotation/engine";
+import { shiftAnnounceMessage } from "@/lib/slack/blocks";
+import { slack } from "@/lib/slack/client";
 import { readVerifiedSlackRequest } from "@/lib/slack/request";
 import {
   openAnswerModal,
@@ -39,6 +43,26 @@ export async function POST(req: Request) {
             userId: payload.user.id,
             responseUrl: payload.response_url,
           });
+        } else if (action?.action_id === "rotation:assign_next" && meta) {
+          const settings = await getTeamSettings();
+          if (!settings.adminSlackIds.includes(payload.user.id)) {
+            await slack.respond(payload.response_url, {
+              text: "Only admins can manage rotations.",
+            });
+          } else {
+            const result = await assignNextInQueue(meta.rotationId, meta.date);
+            if (!result) {
+              await slack.respond(payload.response_url, {
+                text: "This shift is no longer current — can't reassign it now.",
+              });
+            } else {
+              await slack.updateMessage({
+                channel: payload.channel.id,
+                ts: payload.message.ts,
+                ...shiftAnnounceMessage(result.rotation, result.assignee, meta.date),
+              });
+            }
+          }
         }
         break;
       }

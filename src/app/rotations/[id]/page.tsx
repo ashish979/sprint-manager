@@ -93,6 +93,13 @@ export default async function RotationDetailPage({
         {rotation.usergroupId && <span className={chipClass}>👥 {rotation.usergroupId}</span>}
       </div>
 
+      {rotation.notes && (
+        <div className="mt-4 rounded border p-4 dark:border-zinc-800">
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Notes</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm">{rotation.notes}</p>
+        </div>
+      )}
+
       <div className="mt-6 rounded border p-4 dark:border-zinc-800">
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">On duty</p>
         <p className="mt-1 text-lg">

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isShiftDue, nextShiftDate } from "./schedule";
+import { isShiftDue, nextAssignment, nextShiftDate } from "./schedule";
 
 describe("nextShiftDate", () => {
   it("daily advances by one day", () => {
@@ -49,5 +49,26 @@ describe("isShiftDue", () => {
 
   it("is still due after a missed boundary (delayed tick catches up)", () => {
     expect(isShiftDue("weekly", "2026-07-20", "2026-07-08")).toBe(true);
+  });
+});
+
+describe("nextAssignment", () => {
+  const members = ["alice", "bob", "carol"];
+
+  it("picks whoever the cursor currently points to", () => {
+    expect(nextAssignment(members, 1)).toEqual({ assignee: "bob", cursor: 2 });
+  });
+
+  it("wraps around past the end of the list", () => {
+    expect(nextAssignment(members, 2)).toEqual({ assignee: "carol", cursor: 3 });
+    expect(nextAssignment(members, 3)).toEqual({ assignee: "alice", cursor: 4 });
+  });
+
+  it("never resets the raw cursor — only the modulo lookup wraps", () => {
+    expect(nextAssignment(members, 8)).toEqual({ assignee: "carol", cursor: 9 });
+  });
+
+  it("degenerates sanely with a single member", () => {
+    expect(nextAssignment(["solo"], 5)).toEqual({ assignee: "solo", cursor: 6 });
   });
 });

@@ -56,3 +56,19 @@ export function isShiftDue(cadence: Cadence, today: string, lastStartDate?: stri
   if (!lastStartDate) return true;
   return today >= nextShiftDate(cadence, lastStartDate);
 }
+
+/**
+ * "Assign to next in queue" cursor math. `cursor` already points past the
+ * *current* assignee (advanced when their shift was created), so
+ * `members[cursor % length]` is already "whoever's next" — this bumps the
+ * cursor one further, since the fill-in's own turn is consumed too. A
+ * permanent move-on: the skipped person doesn't get made up later, and the
+ * fill-in still gets their own real turn undiminished.
+ */
+export function nextAssignment(
+  members: string[],
+  cursor: number,
+): { assignee: string; cursor: number } {
+  const assignee = members[cursor % members.length];
+  return { assignee, cursor: cursor + 1 };
+}

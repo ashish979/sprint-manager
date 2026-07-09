@@ -38,6 +38,7 @@ export async function createRotationAction(formData: FormData): Promise<void> {
   const channel = String(formData.get("channel") ?? "").trim();
   const members = parseMembers(formData);
   const usergroupId = String(formData.get("usergroupId") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
   const cadence = String(formData.get("cadence") ?? ROTATION_DEFAULTS.cadence) as Cadence;
 
   if (!name || !channel || members.length === 0) {
@@ -55,6 +56,7 @@ export async function createRotationAction(formData: FormData): Promise<void> {
     members,
     cadence,
     usergroupId: usergroupId || undefined,
+    notes: notes || undefined,
     cursor: 0,
     createdAt: now,
     updatedAt: now,
@@ -87,6 +89,7 @@ export async function updateRotationAction(formData: FormData): Promise<void> {
   const channel = String(formData.get("channel") ?? "").trim();
   const members = parseMembers(formData);
   const usergroupId = String(formData.get("usergroupId") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
   const cadence = String(formData.get("cadence") ?? ROTATION_DEFAULTS.cadence) as Cadence;
 
   if (!name || !channel || members.length === 0) {
@@ -103,6 +106,7 @@ export async function updateRotationAction(formData: FormData): Promise<void> {
     members,
     cadence,
     usergroupId: usergroupId || undefined,
+    notes: notes || undefined,
     // Members can shrink/reorder — clamp so cursor still points at a valid index.
     cursor: existing.cursor % members.length,
     updatedAt: new Date().toISOString(),
