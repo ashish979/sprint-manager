@@ -1,3 +1,4 @@
+import { env } from "@/lib/env";
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
 import { friendlyDate } from "@/lib/tz";
 import type { QuestionConfig, Report, RotationConfig, StandupConfig } from "@/lib/types";
@@ -12,6 +13,11 @@ export interface ButtonMeta {
 export interface ModalMeta extends ButtonMeta {
   dmChannel?: string;
   dmTs?: string;
+}
+
+export interface RotationButtonMeta {
+  rotationId: string;
+  date: string;
 }
 
 const mention = (userId: string) => `<@${userId}>`;
@@ -345,7 +351,26 @@ export function shiftAnnounceMessage(
           text: `🔄 *${rotation.name}*\n${mention(assignee)} is on duty starting ${friendlyDate(date)}.`,
         },
       },
+      ...(rotation.notes
+        ? [{ type: "section", text: { type: "mrkdwn", text: `*Notes:*\n${rotation.notes}` } }]
+        : []),
       { type: "context", elements: [{ type: "mrkdwn", text: `Rotates ${rotation.cadence}` }] },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            action_id: "rotation:assign_next",
+            text: { type: "plain_text", text: "Assign to next in queue" },
+            value: JSON.stringify({ rotationId: rotation.id, date } satisfies RotationButtonMeta),
+          },
+          {
+            type: "button",
+            text: { type: "plain_text", text: "Manage rotation" },
+            url: `${env.siteUrl}/rotations/${rotation.id}`,
+          },
+        ],
+      },
     ],
   };
 }
