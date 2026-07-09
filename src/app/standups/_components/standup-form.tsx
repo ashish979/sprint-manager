@@ -2,6 +2,7 @@ import type { UserOption } from "@/lib/slack/directory";
 import { DEFAULT_QUESTIONS, STANDUP_DEFAULTS, STANDUP_TEMPLATES, type StandupConfig } from "@/lib/types";
 
 import { ParticipantPicker } from "./participant-picker";
+import { QuestionsEditor } from "./questions-editor";
 
 /** Shared create/edit form for a standup — see new/page.tsx and [id]/edit/page.tsx. */
 
@@ -41,8 +42,7 @@ export function StandupForm({
   // An explicit ?template= always wins (deliberate intent to replace questions),
   // then an existing standup's own questions, then the plain default.
   const template = templateId ? STANDUP_TEMPLATES.find((t) => t.id === templateId) : undefined;
-  const questionsDefault =
-    template?.questions.join("\n") ?? standup?.questions.join("\n") ?? DEFAULT_QUESTIONS.join("\n");
+  const questionsDefault = template?.questions ?? standup?.questions ?? DEFAULT_QUESTIONS;
 
   return (
     <form action={action} className="mt-6">
@@ -97,15 +97,11 @@ export function StandupForm({
 
       <section className={sectionClass}>
         <h2 className={sectionHeadingClass}>Questions</h2>
-        <label className={labelClass}>
-          One per line
-          <textarea
-            name="questions"
-            rows={4}
-            defaultValue={questionsDefault}
-            className={inputClass}
-          />
-        </label>
+        <QuestionsEditor
+          key={template?.id ?? standup?.id ?? "default"}
+          name="questions"
+          defaultQuestions={questionsDefault}
+        />
       </section>
 
       <section className={sectionClass}>

@@ -17,13 +17,6 @@ function parseList(value: string): string[] {
     .filter(Boolean);
 }
 
-function parseLines(value: string): string[] {
-  return value
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 /**
  * Participants come from two independent sources — the textarea (ids
  * typed/pasted directly) and the optional picker (multi-select, when the
@@ -36,13 +29,21 @@ function parseParticipants(formData: FormData): string[] {
   return [...new Set([...typed, ...picked])];
 }
 
+/** One FormData entry per question row (QuestionsEditor), in order. */
+function parseQuestions(formData: FormData): string[] {
+  return formData
+    .getAll("questions")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+}
+
 export async function createStandupAction(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
   const participants = parseParticipants(formData);
-  const questions = parseLines(String(formData.get("questions") ?? ""));
+  const questions = parseQuestions(formData);
   const time = String(formData.get("time") ?? STANDUP_DEFAULTS.time);
   const weekdays = formData.getAll("weekdays").map(Number);
 
@@ -98,7 +99,7 @@ export async function updateStandupAction(formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
   const participants = parseParticipants(formData);
-  const questions = parseLines(String(formData.get("questions") ?? ""));
+  const questions = parseQuestions(formData);
   const time = String(formData.get("time") ?? STANDUP_DEFAULTS.time);
   const weekdays = formData.getAll("weekdays").map(Number);
 
