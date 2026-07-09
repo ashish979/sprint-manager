@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/authz";
 import { advanceRotationNow } from "@/lib/rotation/engine";
 import { putOverride } from "@/lib/store/overrides";
-import { deleteRotation, putRotation } from "@/lib/store/rotations";
+import { deleteRotation, getRotation, putRotation } from "@/lib/store/rotations";
 import { ensureUserProfile } from "@/lib/store/users";
 import { ROTATION_DEFAULTS, type Cadence, type RotationConfig } from "@/lib/types";
 
@@ -61,6 +61,53 @@ export async function createRotationAction(formData: FormData): Promise<void> {
   }
 
   redirect(`/rotations/${config.id}`);
+}
+
+export async function updateRotationAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("missing id");
+  const existing = await getRotation(id);
+  if (!existing) throw new Error(`rotation ${id} not found`);
+
+  const name = String(formData.get("name") ?? "").trim();
+  const channel = String(formData.get("channel") ?? "").trim();
+  const members = parseList(String(formData.get("members") ?? ""));
+  const usergroupId = String(formData.get("usergroupId") ?? "").trim();
+  const cadence = String(formData.get("cadence") ?? ROTATION_DEFAULTS.cadence) as Cadence;
+
+  if (!name || !channel || members.length === 0) {
+    throw new Error("name, channel, and members are required");
+  }
+  if (!CADENCES.includes(cadence)) {
+    throw new Error("invalid cadence");
+  }
+
+  const config: RotationConfig = {
+    ...existing,
+    name,
+    channel,
+    members,
+    cadence,
+    usergroupId: usergroupId || undefined,
+    // Members can shrink/reorder — clamp so cursor still points at a valid index.
+    cursor: existing.cursor % members.length,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await putRotation(config);
+
+  for (const userId of members) {
+    try {
+      await ensureUserProfile(userId);
+    } catch {
+      /* synced lazily by the tick instead */
+    }
+  }
+
+  revalidatePath(`/rotations/${id}`);
+  redirect(`/rotations/${id}`);
 }
 
 export async function deleteRotationAction(formData: FormData): Promise<void> {
