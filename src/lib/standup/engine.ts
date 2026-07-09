@@ -4,7 +4,7 @@ import {
   answersFromView,
   type ModalMeta,
   promptMessage,
-  reminderText,
+  reminderMessage,
   replyMessage,
 } from "@/lib/slack/blocks";
 import { slack } from "@/lib/slack/client";
@@ -116,7 +116,7 @@ async function sendReminder(standup: StandupConfig, report: Report): Promise<voi
   await incrementReminders(standup.id, report.date, report.userId);
   await slack.postMessage({
     channel: report.dmChannel,
-    text: reminderText(standup, report.remindersSent + 1),
+    ...reminderMessage(standup, report.date, report.remindersSent + 1),
   });
 }
 

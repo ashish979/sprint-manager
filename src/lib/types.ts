@@ -123,6 +123,13 @@ export interface UserProfile {
   updatedAt: string;
 }
 
+/** Slack-synced channel display name, so pages can show #name instead of a raw id. */
+export interface ChannelInfo {
+  channelId: string;
+  name: string;
+  updatedAt: string;
+}
+
 export type Cadence = "daily" | "weekdays" | "weekly" | "biweekly" | "monthly";
 
 export interface RotationConfig {

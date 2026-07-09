@@ -81,6 +81,14 @@ export const slack = {
     return res.user;
   },
 
+  async channelInfo(channelId: string): Promise<{ name?: string }> {
+    const res = await call<SlackResponse & { channel: { name?: string } }>(
+      "conversations.info",
+      { channel: channelId },
+    );
+    return res.channel;
+  },
+
   /** For block_actions response_url — replaces the original message. */
   async respond(responseUrl: string, text: string): Promise<void> {
     await fetch(responseUrl, {

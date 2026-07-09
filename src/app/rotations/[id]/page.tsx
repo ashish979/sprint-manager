@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
+import { ensureChannelInfo } from "@/lib/store/channels";
 import { getRotation } from "@/lib/store/rotations";
 import { getLatestShift, listShifts } from "@/lib/store/shifts";
 import { getUserProfile } from "@/lib/store/users";
@@ -11,6 +12,9 @@ import type { ShiftSource } from "@/lib/types";
 import { deleteRotationAction, queueOverrideAction, rotateNowAction } from "../actions";
 
 export const dynamic = "force-dynamic";
+
+const chipClass =
+  "rounded bg-zinc-100 px-2 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300";
 
 const SOURCE_BADGE: Record<ShiftSource, { label: string; class: string }> = {
   auto: { label: "auto", class: "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300" },
@@ -38,10 +42,11 @@ export default async function RotationDetailPage({
   const rotation = await getRotation(id);
   if (!rotation) notFound();
 
-  const [admin, current, history] = await Promise.all([
+  const [admin, current, history, channelInfo] = await Promise.all([
     isAdminSession(),
     getLatestShift(rotation.id),
     listShifts(rotation.id),
+    ensureChannelInfo(rotation.channel),
   ]);
   const profiles = await Promise.all(rotation.members.map((u) => getUserProfile(u)));
   const nameOf = (userId: string) => profiles.find((p) => p?.userId === userId)?.name ?? userId;
@@ -72,15 +77,11 @@ export default async function RotationDetailPage({
         )}
       </div>
 
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-        {rotation.cadence} · channel <code>{rotation.channel}</code>
-        {rotation.usergroupId && (
-          <>
-            {" "}
-            · user group <code>{rotation.usergroupId}</code>
-          </>
-        )}
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className={chipClass}>🔁 {rotation.cadence}</span>
+        <span className={chipClass}>#{channelInfo?.name ?? rotation.channel}</span>
+        {rotation.usergroupId && <span className={chipClass}>👥 {rotation.usergroupId}</span>}
+      </div>
 
       <div className="mt-6 rounded border p-4 dark:border-zinc-800">
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">On duty</p>
