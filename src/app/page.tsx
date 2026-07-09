@@ -34,7 +34,7 @@ export default async function Home() {
         </p>
 
         {session?.user ? (
-          <div className="flex w-full max-w-sm flex-col items-center gap-5 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+          <div className="flex w-full max-w-sm flex-col items-center gap-5 rounded-2xl border border-zinc-200 bg-white/80 p-6 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06]">
             <p className="text-zinc-600 dark:text-zinc-300">
               Welcome back, <strong className="text-black dark:text-white">{session.user.name}</strong>
               {session.isAdmin && (
