@@ -27,4 +27,8 @@ export const env = {
   get slackTeamId() {
     return required("SLACK_TEAM_ID");
   },
+  /** Public base URL (no trailing slash) — for Slack messages that link back to the dashboard. */
+  get siteUrl() {
+    return required("SITE_URL");
+  },
 };

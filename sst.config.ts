@@ -67,6 +67,11 @@ export default $config({
     const slackClientSecret = new sst.Secret("SlackClientSecret");
     const slackTeamId = new sst.Secret("SlackTeamId");
     const authSecret = new sst.Secret("AuthSecret");
+    // Public base URL, for Slack messages that link back to the dashboard
+    // (e.g. the rotation "Manage rotation" button). Can't be self-referential
+    // (site.url isn't known until the Nextjs site itself is created), so this
+    // is set once per stage rather than derived automatically.
+    const siteUrl = new sst.Secret("SiteUrl");
 
     // App code reads plain env vars (src/lib/env.ts) so local dev works
     // from .env.local; links below still grant IAM access to the table.
@@ -74,6 +79,7 @@ export default $config({
       SLACK_SIGNING_SECRET: slackSigningSecret.value,
       SLACK_BOT_TOKEN: slackBotToken.value,
       SLACK_TEAM_ID: slackTeamId.value,
+      SITE_URL: siteUrl.value,
       TABLE_NAME: table.name,
     };
 
