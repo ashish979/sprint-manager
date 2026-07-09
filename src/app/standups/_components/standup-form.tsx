@@ -25,12 +25,17 @@ const sectionHeadingClass =
 
 export function StandupForm({
   action,
+  secondaryAction,
+  secondaryLabel,
   standup,
   templateId,
   submitLabel,
   users,
 }: {
   action: (formData: FormData) => Promise<void>;
+  /** Optional second submit button (via formAction) — e.g. "Create and start", create-only. */
+  secondaryAction?: (formData: FormData) => Promise<void>;
+  secondaryLabel?: string;
   standup?: StandupConfig;
   templateId?: string;
   submitLabel: string;
@@ -195,12 +200,23 @@ export function StandupForm({
         </label>
       </section>
 
-      <button
-        type="submit"
-        className="mt-8 rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80 dark:bg-white dark:text-black dark:hover:opacity-90"
-      >
-        {submitLabel}
-      </button>
+      <div className="mt-8 flex gap-3">
+        <button
+          type="submit"
+          className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80 dark:bg-white dark:text-black dark:hover:opacity-90"
+        >
+          {submitLabel}
+        </button>
+        {secondaryAction && (
+          <button
+            type="submit"
+            formAction={secondaryAction}
+            className="rounded border px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            {secondaryLabel}
+          </button>
+        )}
+      </div>
     </form>
   );
 }
