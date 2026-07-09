@@ -5,7 +5,7 @@ import { isAdminSession } from "@/lib/authz";
 import { listUserOptions } from "@/lib/slack/directory";
 import { STANDUP_TEMPLATES } from "@/lib/types";
 
-import { createStandupAction } from "../actions";
+import { createAndStartStandupAction, createStandupAction } from "../actions";
 import { StandupForm } from "../_components/standup-form";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +50,8 @@ export default async function NewStandupPage({
 
       <StandupForm
         action={createStandupAction}
+        secondaryAction={createAndStartStandupAction}
+        secondaryLabel="Create and start"
         templateId={activeTemplate}
         submitLabel="Create standup"
         users={users}

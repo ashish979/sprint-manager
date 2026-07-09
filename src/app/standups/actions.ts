@@ -38,9 +38,8 @@ function parseQuestions(formData: FormData): QuestionConfig[] {
     .filter((q) => q.text.length > 0);
 }
 
-export async function createStandupAction(formData: FormData): Promise<void> {
-  await requireAdmin();
-
+/** Shared by createStandupAction/createAndStartStandupAction — everything up to the actual write. */
+async function buildAndSaveStandup(formData: FormData): Promise<StandupConfig> {
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
   const participants = parseParticipants(formData);
@@ -78,7 +77,7 @@ export async function createStandupAction(formData: FormData): Promise<void> {
 
   // Pre-sync timezones so the first tick doesn't need Slack round-trips.
   // Best-effort: without a bot token (early local dev) profiles default to UTC.
-  for (const userId of participants) {
+  for (const userId of config.participants) {
     try {
       await ensureUserProfile(userId);
     } catch {
@@ -86,6 +85,20 @@ export async function createStandupAction(formData: FormData): Promise<void> {
     }
   }
 
+  return config;
+}
+
+export async function createStandupAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const config = await buildAndSaveStandup(formData);
+  redirect(`/standups/${config.id}`);
+}
+
+/** Same as createStandupAction, but immediately prompts everyone instead of waiting for the next tick. */
+export async function createAndStartStandupAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const config = await buildAndSaveStandup(formData);
+  await startStandupNow(config.id);
   redirect(`/standups/${config.id}`);
 }
 
