@@ -6,6 +6,9 @@ import {
   promptMessage,
   reminderMessage,
   replyMessage,
+  skippedDmMessage,
+  statusNoteMessage,
+  submittedDmMessage,
 } from "@/lib/slack/blocks";
 import { slack } from "@/lib/slack/client";
 import {
@@ -195,6 +198,13 @@ async function recordOutOfOffice(
     remindersSent: 0,
   });
   if (created) {
+    if (day.threadTs) {
+      await slack.postMessage({
+        channel: day.channel,
+        thread_ts: day.threadTs,
+        ...statusNoteMessage(userId, "ooo"),
+      });
+    }
     await refreshAnchor(standup, date, day);
     await maybeCloseDay(standup, date);
   }
@@ -228,6 +238,13 @@ export async function resolveRemovedParticipants(
     for (const userId of removedUserIds) {
       const marked = await markReportIfPending(standup.id, day.date, userId, "skipped");
       if (marked) {
+        if (day.threadTs) {
+          await slack.postMessage({
+            channel: day.channel,
+            thread_ts: day.threadTs,
+            ...statusNoteMessage(userId, "removed"),
+          });
+        }
         await refreshAnchor(standup, day.date, day);
         await maybeCloseDay(standup, day.date);
       }
@@ -316,8 +333,7 @@ export async function submitFromView(payload: {
     await slack.updateMessage({
       channel: meta.dmChannel,
       ts: meta.dmTs,
-      text: `✅ *${standup.name}* submitted — thanks! You can reopen it from the thread in <#${standup.channel}>.`,
-      blocks: [],
+      ...submittedDmMessage(standup, meta.date),
     });
   }
 
@@ -343,11 +359,19 @@ export async function skipToday(opts: {
   await slack.respond(
     opts.responseUrl,
     marked
-      ? `👍 No worries — skipping *${standup.name}* today.`
-      : "This standup is already recorded for today.",
+      ? skippedDmMessage(standup, opts.date)
+      : { text: "This standup is already recorded for today." },
   );
   if (marked) {
-    await refreshAnchor(standup, opts.date);
+    const day = await getDay(standup.id, opts.date);
+    if (day?.threadTs) {
+      await slack.postMessage({
+        channel: day.channel,
+        thread_ts: day.threadTs,
+        ...statusNoteMessage(opts.userId, "skipped"),
+      });
+    }
+    await refreshAnchor(standup, opts.date, day);
     await maybeCloseDay(standup, opts.date);
   }
 }
@@ -361,7 +385,15 @@ async function resolveAsMissed(
 ): Promise<void> {
   const marked = await markReportIfPending(standup.id, date, userId, "missed");
   if (marked) {
-    await refreshAnchor(standup, date);
+    const day = await getDay(standup.id, date);
+    if (day?.threadTs) {
+      await slack.postMessage({
+        channel: day.channel,
+        thread_ts: day.threadTs,
+        ...statusNoteMessage(userId, "missed"),
+      });
+    }
+    await refreshAnchor(standup, date, day);
     await maybeCloseDay(standup, date);
   }
 }
