@@ -6,7 +6,7 @@ import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
 import { ensureChannelInfo } from "@/lib/store/channels";
-import { listReports } from "@/lib/store/reports";
+import { getDay, listReports } from "@/lib/store/reports";
 import { getStandup } from "@/lib/store/standups";
 import { getUserProfile } from "@/lib/store/users";
 import { formatTime12h } from "@/lib/tz";
@@ -47,6 +47,18 @@ function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+const DAY_STATUS_BADGE = {
+  closed: { label: "Closed", class: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300" },
+  open: {
+    label: "In progress",
+    class: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
+  },
+  notStarted: {
+    label: "Not started",
+    class: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500",
+  },
+} as const;
+
 export default async function StandupDetailPage({
   params,
   searchParams,
@@ -64,17 +76,19 @@ export default async function StandupDetailPage({
   const { date: rawDate } = await searchParams;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate ?? "") ? rawDate! : todayUtc();
 
-  const [reports, admin, profiles, channelInfo] = await Promise.all([
+  const [reports, admin, profiles, channelInfo, day] = await Promise.all([
     listReports(standup.id, date),
     isAdminSession(),
     Promise.all(standup.participants.map((u) => getUserProfile(u))),
     ensureChannelInfo(standup.channel),
+    getDay(standup.id, date),
   ]);
   const nameOf = (userId: string) =>
     profiles.find((p) => p?.userId === userId)?.name ?? userId;
   const reportOf = (userId: string): Report | undefined =>
     reports.find((r) => r.userId === userId);
   const blockerIdx = blockerQuestionIndex(standup.questions);
+  const dayStatus = DAY_STATUS_BADGE[day ? day.status : "notStarted"];
 
   return (
     <main className="mx-auto max-w-3xl p-8">
@@ -83,7 +97,12 @@ export default async function StandupDetailPage({
       </Link>
 
       <div className="mt-2 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{standup.name}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{standup.name}</h1>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${dayStatus.class}`}>
+            {dayStatus.label}
+          </span>
+        </div>
         {admin && (
           <div className="flex gap-2">
             <Link
