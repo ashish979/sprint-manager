@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
+import { ensureChannelInfo } from "@/lib/store/channels";
 import { listStandups } from "@/lib/store/standups";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,11 @@ export default async function StandupsPage() {
   }
 
   const [standups, admin] = await Promise.all([listStandups(), isAdminSession()]);
+
+  // Several standups can share a channel — look each unique id up once.
+  const uniqueChannelIds = [...new Set(standups.map((s) => s.channel))];
+  const channelInfos = await Promise.all(uniqueChannelIds.map((id) => ensureChannelInfo(id)));
+  const channelNameById = new Map(uniqueChannelIds.map((id, i) => [id, channelInfos[i]?.name]));
 
   return (
     <main className="mx-auto max-w-3xl p-8">
@@ -55,7 +61,8 @@ export default async function StandupsPage() {
                 <div className="min-w-0 flex-1 truncate">
                   <span className="font-medium">{s.name}</span>
                   <span className="ml-3 text-sm text-zinc-500 dark:text-zinc-400">
-                    {s.time} local · {s.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}
+                    #{channelNameById.get(s.channel) ?? s.channel} · {s.time} local ·{" "}
+                    {s.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}
                   </span>
                 </div>
                 <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
