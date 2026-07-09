@@ -1,7 +1,7 @@
+import { ParticipantPicker } from "@/app/_components/participant-picker";
 import type { UserOption } from "@/lib/slack/directory";
 import { DEFAULT_QUESTIONS, STANDUP_DEFAULTS, STANDUP_TEMPLATES, type StandupConfig } from "@/lib/types";
 
-import { ParticipantPicker } from "./participant-picker";
 import { QuestionsEditor } from "./questions-editor";
 
 /** Shared create/edit form for a standup — see new/page.tsx and [id]/edit/page.tsx. */
