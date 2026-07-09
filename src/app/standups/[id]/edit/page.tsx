@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { isAdminSession } from "@/lib/authz";
+import { listUserOptions } from "@/lib/slack/directory";
 import { getStandup } from "@/lib/store/standups";
 import { STANDUP_TEMPLATES } from "@/lib/types";
 
@@ -23,7 +24,7 @@ export default async function EditStandupPage({
   const standup = await getStandup(id);
   if (!standup) notFound();
 
-  const { template } = await searchParams;
+  const [{ template }, users] = await Promise.all([searchParams, listUserOptions()]);
 
   return (
     <main className="mx-auto max-w-2xl p-8">
@@ -57,6 +58,7 @@ export default async function EditStandupPage({
         standup={standup}
         templateId={template}
         submitLabel="Save changes"
+        users={users}
       />
     </main>
   );

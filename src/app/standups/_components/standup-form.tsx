@@ -1,3 +1,4 @@
+import type { UserOption } from "@/lib/slack/directory";
 import { DEFAULT_QUESTIONS, STANDUP_DEFAULTS, STANDUP_TEMPLATES, type StandupConfig } from "@/lib/types";
 
 /** Shared create/edit form for a standup — see new/page.tsx and [id]/edit/page.tsx. */
@@ -24,11 +25,14 @@ export function StandupForm({
   standup,
   templateId,
   submitLabel,
+  users,
 }: {
   action: (formData: FormData) => Promise<void>;
   standup?: StandupConfig;
   templateId?: string;
   submitLabel: string;
+  /** null when the Slack lookup is unavailable — the picker is simply omitted. */
+  users?: UserOption[] | null;
 }) {
   const weekdays = standup?.weekdays ?? STANDUP_DEFAULTS.weekdays;
 
@@ -71,13 +75,29 @@ export function StandupForm({
           Participants — Slack user ids, space/comma separated
           <textarea
             name="participants"
-            required
             rows={2}
             defaultValue={standup?.participants.join(" ")}
             placeholder="U0123ABC U0456DEF"
             className={inputClass}
           />
         </label>
+
+        {users && (
+          <label className={labelClass}>
+            Or search and select people (adds to the ids above)
+            <select name="participantsPicker" multiple size={6} className={inputClass}>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs font-normal text-zinc-500 dark:text-zinc-400">
+              Type a name to jump to it; Cmd/Ctrl-click (or shift-click for a range) to select
+              multiple.
+            </span>
+          </label>
+        )}
       </section>
 
       <section className={sectionClass}>

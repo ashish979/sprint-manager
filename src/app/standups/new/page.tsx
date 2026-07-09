@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { isAdminSession } from "@/lib/authz";
+import { listUserOptions } from "@/lib/slack/directory";
 import { STANDUP_TEMPLATES } from "@/lib/types";
 
 import { createStandupAction } from "../actions";
@@ -15,7 +16,7 @@ export default async function NewStandupPage({
   searchParams: Promise<{ template?: string }>;
 }) {
   if (!(await isAdminSession())) redirect("/standups");
-  const { template } = await searchParams;
+  const [{ template }, users] = await Promise.all([searchParams, listUserOptions()]);
 
   return (
     <main className="mx-auto max-w-2xl p-8">
@@ -40,7 +41,12 @@ export default async function NewStandupPage({
         ))}
       </div>
 
-      <StandupForm action={createStandupAction} templateId={template} submitLabel="Create standup" />
+      <StandupForm
+        action={createStandupAction}
+        templateId={template}
+        submitLabel="Create standup"
+        users={users}
+      />
     </main>
   );
 }

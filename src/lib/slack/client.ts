@@ -89,6 +89,16 @@ export const slack = {
     return res.channel;
   },
 
+  async listUsers(): Promise<{ id: string; real_name?: string; name: string }[]> {
+    const res = await call<
+      SlackResponse & {
+        members: { id: string; real_name?: string; name: string; is_bot?: boolean; deleted?: boolean }[];
+      }
+    >("users.list", { limit: 200 });
+    // Slackbot is a special system user not reliably flagged is_bot.
+    return res.members.filter((m) => !m.is_bot && !m.deleted && m.id !== "USLACKBOT");
+  },
+
   /** For block_actions response_url — replaces the original message. */
   async respond(responseUrl: string, message: { text: string; blocks?: unknown[] }): Promise<void> {
     await fetch(responseUrl, {

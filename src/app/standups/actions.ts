@@ -24,12 +24,24 @@ function parseLines(value: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Participants come from two independent sources — the textarea (ids
+ * typed/pasted directly) and the optional picker (multi-select, when the
+ * Slack directory lookup succeeded) — combined and deduped. Neither
+ * replaces the other; either alone (or both together) is valid.
+ */
+function parseParticipants(formData: FormData): string[] {
+  const typed = parseList(String(formData.get("participants") ?? ""));
+  const picked = formData.getAll("participantsPicker").map(String).filter(Boolean);
+  return [...new Set([...typed, ...picked])];
+}
+
 export async function createStandupAction(formData: FormData): Promise<void> {
   await requireAdmin();
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
-  const participants = parseList(String(formData.get("participants") ?? ""));
+  const participants = parseParticipants(formData);
   const questions = parseLines(String(formData.get("questions") ?? ""));
   const time = String(formData.get("time") ?? STANDUP_DEFAULTS.time);
   const weekdays = formData.getAll("weekdays").map(Number);
@@ -85,7 +97,7 @@ export async function updateStandupAction(formData: FormData): Promise<void> {
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
-  const participants = parseList(String(formData.get("participants") ?? ""));
+  const participants = parseParticipants(formData);
   const questions = parseLines(String(formData.get("questions") ?? ""));
   const time = String(formData.get("time") ?? STANDUP_DEFAULTS.time);
   const weekdays = formData.getAll("weekdays").map(Number);
