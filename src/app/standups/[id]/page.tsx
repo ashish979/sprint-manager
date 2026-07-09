@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
@@ -99,9 +100,12 @@ export default async function StandupDetailPage({
             </form>
             <form action={deleteStandupAction}>
               <input type="hidden" name="id" value={standup.id} />
-              <button className="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950">
+              <ConfirmSubmitButton
+                confirmText={`Delete "${standup.name}"? This can't be undone.`}
+                className="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+              >
                 Delete
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </div>
         )}
