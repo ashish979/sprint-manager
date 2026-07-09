@@ -90,11 +90,11 @@ export const slack = {
   },
 
   /** For block_actions response_url — replaces the original message. */
-  async respond(responseUrl: string, text: string): Promise<void> {
+  async respond(responseUrl: string, message: { text: string; blocks?: unknown[] }): Promise<void> {
     await fetch(responseUrl, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ replace_original: true, text }),
+      body: JSON.stringify({ replace_original: true, ...message }),
     });
   },
 

@@ -46,6 +46,83 @@ function answerButtons(standup: Pick<StandupConfig, "id">, date: string): unknow
   };
 }
 
+/** A single "standup:answer" button — reopens the modal from a terminal DM. */
+function updateAnswerButton(
+  standup: Pick<StandupConfig, "id">,
+  date: string,
+  label: string,
+): unknown {
+  const value = JSON.stringify({ standupId: standup.id, date } satisfies ButtonMeta);
+  return {
+    type: "actions",
+    elements: [
+      {
+        type: "button",
+        action_id: "standup:answer",
+        text: { type: "plain_text", text: label },
+        value,
+      },
+    ],
+  };
+}
+
+/** DM shown after a modal submission — keeps a way back in, since late/updated answers are welcome. */
+export function submittedDmMessage(
+  standup: StandupConfig,
+  date: string,
+): { text: string; blocks: unknown[] } {
+  return {
+    text: `✅ ${standup.name} submitted — thanks!`,
+    blocks: [
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: `✅ *${standup.name}* submitted — thanks!` },
+      },
+      updateAnswerButton(standup, date, "Update answer"),
+    ],
+  };
+}
+
+/** DM shown after "Not today" — still lets them change their mind. */
+export function skippedDmMessage(
+  standup: StandupConfig,
+  date: string,
+): { text: string; blocks: unknown[] } {
+  return {
+    text: `👍 No worries — skipping ${standup.name} today.`,
+    blocks: [
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: `👍 No worries — skipping *${standup.name}* today.` },
+      },
+      updateAnswerButton(standup, date, "Answer instead"),
+    ],
+  };
+}
+
+const STATUS_NOTE: Record<"skipped" | "missed" | "ooo" | "removed", string> = {
+  skipped: "🏖️ skipped today's standup.",
+  missed: "❌ missed today's standup.",
+  ooo: "🌴 is out of office today.",
+  removed: "was removed from this standup by an admin.",
+};
+
+/**
+ * Lightweight thread note posted when someone resolves without submitting
+ * (skip/miss/OOO/removed) — otherwise they silently vanish from the
+ * "waiting on" list with nothing in the thread explaining why. Always
+ * identified, even for anonymous standups: this is a participation event,
+ * not answer content, and the anchor's roster already shows the same
+ * identity.
+ */
+export function statusNoteMessage(
+  userId: string,
+  status: "skipped" | "missed" | "ooo" | "removed",
+): { text: string; blocks: unknown[] } {
+  const text = `${mention(userId)} ${STATUS_NOTE[status]}`;
+  return { text, blocks: [{ type: "context", elements: [{ type: "mrkdwn", text }] }] };
+}
+
 // --- Channel anchor message (one per standup per day) ---
 
 export function anchorMessage(
