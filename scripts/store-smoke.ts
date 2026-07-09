@@ -3,6 +3,7 @@ import {
   createDayIfAbsent,
   createReportIfAbsent,
   getDay,
+  listOpenDays,
   listReports,
   markReportIfPending,
   saveSubmission,
@@ -12,6 +13,7 @@ import { deleteOverride, getOverride, putOverride } from "../src/lib/store/overr
 import { deleteRotation, getRotation, listRotations, putRotation } from "../src/lib/store/rotations";
 import { createShiftIfAbsent, getLatestShift, listShifts } from "../src/lib/store/shifts";
 import { deleteStandup, getStandup, listStandups, putStandup } from "../src/lib/store/standups";
+import { getUserProfile, putUserProfile, setOutOfOffice, setPreferredTime } from "../src/lib/store/users";
 import { DEFAULT_QUESTIONS, type RotationConfig, type StandupConfig } from "../src/lib/types";
 
 const SMOKE_ID = `smoke-${Date.now()}`;
@@ -54,6 +56,11 @@ async function main() {
   await setDayThread(SMOKE_ID, date, "999.999");
   assert((await getDay(SMOKE_ID, date))?.threadTs === "111.222", "threadTs write is first-wins");
 
+  assert(
+    (await listOpenDays(SMOKE_ID)).some((d) => d.date === date),
+    "listOpenDays finds the open day",
+  );
+
   const report = {
     standupId: SMOKE_ID,
     date,
@@ -78,6 +85,29 @@ async function main() {
   assert(reports[0].answers[3] === "fine", "answers persisted");
 
   await deleteStandup(SMOKE_ID); // keep the dashboard clean
+
+  // --- User preferences (preferred time + out-of-office) ---
+  // Note: ensureUserProfile's Slack-refresh preservation fix isn't exercised
+  // here (it needs a real Slack userInfo call) — verified via manual live
+  // check instead.
+
+  await putUserProfile({
+    userId: SMOKE_ID,
+    tz: "UTC",
+    updatedAt: new Date().toISOString(),
+  });
+  await setPreferredTime(SMOKE_ID, "10:00");
+  assert((await getUserProfile(SMOKE_ID))?.preferredTime === "10:00", "set preferred time");
+  await setPreferredTime(SMOKE_ID, undefined);
+  assert((await getUserProfile(SMOKE_ID))?.preferredTime === undefined, "clear preferred time");
+
+  await setOutOfOffice(SMOKE_ID, { from: "2026-07-10", to: "2026-07-15" });
+  assert(
+    (await getUserProfile(SMOKE_ID))?.outOfOffice?.from === "2026-07-10",
+    "set out-of-office",
+  );
+  await setOutOfOffice(SMOKE_ID, undefined);
+  assert((await getUserProfile(SMOKE_ID))?.outOfOffice === undefined, "clear out-of-office");
 
   // --- Rotations ---
 

@@ -1,9 +1,9 @@
-import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { slack } from "@/lib/slack/client";
-import type { UserProfile } from "@/lib/types";
+import type { OutOfOfficeRange, UserProfile } from "@/lib/types";
 
 const key = (userId: string) => ({ pk: `USER#${userId}`, sk: "PROFILE" });
 
@@ -41,6 +41,10 @@ export async function ensureUserProfile(userId: string): Promise<UserProfile | u
       userId,
       tz: user.tz ?? existing?.tz ?? "UTC",
       name: user.real_name ?? existing?.name,
+      // Preserve fields Slack doesn't know about — otherwise this refresh
+      // (every 20h) silently wipes them.
+      preferredTime: existing?.preferredTime,
+      outOfOffice: existing?.outOfOffice,
       updatedAt: new Date().toISOString(),
     };
     await putUserProfile(profile);
@@ -49,4 +53,32 @@ export async function ensureUserProfile(userId: string): Promise<UserProfile | u
     console.error(`users.info failed for ${userId}:`, error);
     return existing;
   }
+}
+
+export async function setPreferredTime(
+  userId: string,
+  time: string | undefined,
+): Promise<void> {
+  await db.send(
+    new UpdateCommand({
+      TableName: env.tableName,
+      Key: key(userId),
+      UpdateExpression: time ? "SET preferredTime = :t" : "REMOVE preferredTime",
+      ExpressionAttributeValues: time ? { ":t": time } : undefined,
+    }),
+  );
+}
+
+export async function setOutOfOffice(
+  userId: string,
+  range: OutOfOfficeRange | undefined,
+): Promise<void> {
+  await db.send(
+    new UpdateCommand({
+      TableName: env.tableName,
+      Key: key(userId),
+      UpdateExpression: range ? "SET outOfOffice = :r" : "REMOVE outOfOffice",
+      ExpressionAttributeValues: range ? { ":r": range } : undefined,
+    }),
+  );
 }

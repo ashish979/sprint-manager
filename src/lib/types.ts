@@ -18,6 +18,12 @@ export interface StandupConfig {
   maxReminders: number;
   /** Local time "HH:MM"; pending reports are marked missed from here on. */
   closeAtTime: string;
+  /**
+   * Hides the author on the public Slack thread reply and on the admin
+   * dashboard. Participation tracking (who has/hasn't responded) stays
+   * fully identified — only the answer-content-to-identity mapping is hidden.
+   */
+  anonymous?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,7 +43,37 @@ export const STANDUP_DEFAULTS = {
   closeAtTime: "23:45",
 } as const;
 
-export type ReportStatus = "pending" | "submitted" | "skipped" | "missed";
+export interface StandupTemplate {
+  id: string;
+  label: string;
+  questions: string[];
+}
+
+export const STANDUP_TEMPLATES: StandupTemplate[] = [
+  { id: "daily", label: "Daily Standup", questions: [...DEFAULT_QUESTIONS] },
+  {
+    id: "retro",
+    label: "Sprint Retro",
+    questions: [
+      "What went well this sprint?",
+      "What didn't go well?",
+      "What should we change next sprint?",
+      "Any shoutouts?",
+    ],
+  },
+  {
+    id: "wellbeing",
+    label: "Well-being Check-in",
+    questions: [
+      "How are you feeling this week (1-5)?",
+      "What's energizing you right now?",
+      "What's draining you right now?",
+      "Anything you need support with?",
+    ],
+  },
+];
+
+export type ReportStatus = "pending" | "submitted" | "skipped" | "missed" | "ooo";
 
 export interface Report {
   standupId: string;
@@ -66,11 +102,24 @@ export interface StandupDay {
   createdAt: string;
 }
 
+export interface OutOfOfficeRange {
+  /** yyyy-mm-dd, inclusive. */
+  from: string;
+  to: string;
+}
+
 export interface UserProfile {
   userId: string;
   /** IANA timezone synced from Slack (users.info .tz). */
   tz: string;
   name?: string;
+  /**
+   * Personal override of a standup's prompt time, "HH:MM", 15-min
+   * increments. Global — applies to every standup this person is in.
+   */
+  preferredTime?: string;
+  /** Active out-of-office window; a single range at a time. */
+  outOfOffice?: OutOfOfficeRange;
   updatedAt: string;
 }
 

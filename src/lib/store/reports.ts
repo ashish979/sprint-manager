@@ -72,6 +72,24 @@ export async function setDayThread(
   );
 }
 
+/** Open days for a standup — used to resolve removed participants' pending reports. */
+export async function listOpenDays(standupId: string): Promise<StandupDay[]> {
+  const res = await db.send(
+    new QueryCommand({
+      TableName: env.tableName,
+      KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
+      FilterExpression: "#status = :open",
+      ExpressionAttributeNames: { "#status": "status" },
+      ExpressionAttributeValues: {
+        ":pk": `STANDUP#${standupId}`,
+        ":prefix": "DAY#",
+        ":open": "open",
+      },
+    }),
+  );
+  return (res.Items ?? []) as StandupDay[];
+}
+
 export async function closeDay(standupId: string, date: string): Promise<void> {
   await db.send(
     new UpdateCommand({

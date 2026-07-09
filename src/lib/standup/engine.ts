@@ -15,6 +15,7 @@ import {
   getDay,
   getReport,
   incrementReminders,
+  listOpenDays,
   listReports,
   markReportIfPending,
   saveSubmission,
@@ -23,10 +24,10 @@ import {
 } from "@/lib/store/reports";
 import { getStandup, listStandups } from "@/lib/store/standups";
 import { ensureUserProfile } from "@/lib/store/users";
-import { localParts } from "@/lib/tz";
+import { localParts, timeToMinutes } from "@/lib/tz";
 import type { Report, StandupConfig, StandupDay } from "@/lib/types";
 
-import { isPromptDue, pendingReportAction } from "./schedule";
+import { isOutOfOffice, isPromptDue, pendingReportAction } from "./schedule";
 
 /**
  * Standup orchestration (PLAN.md §2.3). Called from the tick Lambda
@@ -63,6 +64,14 @@ async function sweepParticipant(
   const tz = profile?.tz ?? "UTC";
   const local = localParts(now, tz);
 
+  // A personal preferred time overrides the standup's default start time only
+  // — closeAtTime/remindAfterMinutes/maxReminders stay shared across the team.
+  const preferredTime =
+    profile?.preferredTime && timeToMinutes(profile.preferredTime) % 15 === 0
+      ? profile.preferredTime
+      : undefined;
+  const effectiveConfig = preferredTime ? { ...standup, time: preferredTime } : standup;
+
   // Safety net: a report left pending across local midnight is missed.
   const yesterday = localParts(new Date(now.getTime() - DAY_MS), tz);
   const yesterdayReport = await getReport(standup.id, yesterday.date, userId);
@@ -73,7 +82,11 @@ async function sweepParticipant(
   const report = await getReport(standup.id, local.date, userId);
 
   if (!report) {
-    if (isPromptDue(local, standup)) {
+    if (isOutOfOffice(local.date, profile?.outOfOffice)) {
+      await recordOutOfOffice(standup, userId, local.date);
+      return;
+    }
+    if (isPromptDue(local, effectiveConfig)) {
       await promptParticipant(standup, userId, local.date, now);
     }
     return;
@@ -92,14 +105,40 @@ async function sweepParticipant(
 
   if (action.type === "miss") {
     await resolveAsMissed(standup, report.date, userId);
-  } else if (action.type === "remind" && report.dmChannel) {
-    // Increment first: if the DM fails we skip a nudge rather than spam.
-    await incrementReminders(standup.id, report.date, userId);
-    await slack.postMessage({
-      channel: report.dmChannel,
-      text: reminderText(standup, action.reminderNumber),
-    });
+  } else if (action.type === "remind") {
+    await sendReminder(standup, report);
   }
+}
+
+/** Increment first: if the DM fails we skip a nudge rather than spam. */
+async function sendReminder(standup: StandupConfig, report: Report): Promise<void> {
+  if (!report.dmChannel) return;
+  await incrementReminders(standup.id, report.date, report.userId);
+  await slack.postMessage({
+    channel: report.dmChannel,
+    text: reminderText(standup, report.remindersSent + 1),
+  });
+}
+
+/**
+ * Admin "remind now" — sends an on-demand nudge regardless of the automatic
+ * remindAfterMinutes cadence. Bypasses maxReminders (that cap throttles the
+ * automated system, not a deliberate one-off), but still increments
+ * remindersSent, so a manual nudge shifts the automatic system's next
+ * reminder later too — avoids double-nudging the same person back-to-back.
+ */
+export async function sendManualReminder(
+  standupId: string,
+  date: string,
+  userId: string,
+): Promise<void> {
+  const standup = await getStandup(standupId);
+  if (!standup) throw new Error(`standup ${standupId} not found`);
+  const report = await getReport(standupId, date, userId);
+  if (!report || report.status !== "pending") {
+    throw new Error("participant is not pending");
+  }
+  await sendReminder(standup, report);
 }
 
 // --- Prompting ---
@@ -133,6 +172,34 @@ export async function promptParticipant(
   await refreshAnchor(standup, date, day);
 }
 
+/**
+ * Records a terminal "ooo" report for a participant whose out-of-office
+ * window covers `date`, instead of prompting them. Only once a `DAY` already
+ * exists — otherwise an OOO participant swept first would prematurely create
+ * the day/anchor before anyone else is actually due.
+ */
+async function recordOutOfOffice(
+  standup: StandupConfig,
+  userId: string,
+  date: string,
+): Promise<void> {
+  const day = await getDay(standup.id, date);
+  if (!day) return;
+  const created = await createReportIfAbsent({
+    standupId: standup.id,
+    date,
+    userId,
+    status: "ooo",
+    answers: [],
+    promptedAt: new Date().toISOString(),
+    remindersSent: 0,
+  });
+  if (created) {
+    await refreshAnchor(standup, date, day);
+    await maybeCloseDay(standup, date);
+  }
+}
+
 /** Admin "start now" — prompts everyone regardless of schedule. */
 export async function startStandupNow(standupId: string): Promise<void> {
   const standup = await getStandup(standupId);
@@ -142,6 +209,29 @@ export async function startStandupNow(standupId: string): Promise<void> {
     const profile = await ensureUserProfile(userId);
     const local = localParts(now, profile?.tz ?? "UTC");
     await promptParticipant(standup, userId, local.date, now);
+  }
+}
+
+/**
+ * Called after an admin edit shrinks `participants`. A removed participant's
+ * still-pending report would otherwise never be swept again and permanently
+ * block maybeCloseDay's `reports.length >= participants.length` check.
+ * "skipped" rather than "missed": this is administrative, not a failure to respond.
+ */
+export async function resolveRemovedParticipants(
+  standup: StandupConfig,
+  removedUserIds: string[],
+): Promise<void> {
+  if (removedUserIds.length === 0) return;
+  const openDays = await listOpenDays(standup.id);
+  for (const day of openDays) {
+    for (const userId of removedUserIds) {
+      const marked = await markReportIfPending(standup.id, day.date, userId, "skipped");
+      if (marked) {
+        await refreshAnchor(standup, day.date, day);
+        await maybeCloseDay(standup, day.date);
+      }
+    }
   }
 }
 
@@ -208,7 +298,7 @@ export async function submitFromView(payload: {
     });
   }
 
-  const reply = replyMessage(userId, standup.questions, answers);
+  const reply = replyMessage(standup, userId, standup.questions, answers);
   let replyTs = existing?.replyTs;
   if (replyTs && day.threadTs) {
     await slack.updateMessage({ channel: standup.channel, ts: replyTs, ...reply });
