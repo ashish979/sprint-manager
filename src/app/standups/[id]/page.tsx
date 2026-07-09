@@ -8,6 +8,7 @@ import { ensureChannelInfo } from "@/lib/store/channels";
 import { listReports } from "@/lib/store/reports";
 import { getStandup } from "@/lib/store/standups";
 import { getUserProfile } from "@/lib/store/users";
+import { formatTime12h } from "@/lib/tz";
 import type { QuestionConfig, Report, ReportStatus } from "@/lib/types";
 
 import { deleteStandupAction, sendReminderAction, startNowAction } from "../actions";
@@ -107,7 +108,7 @@ export default async function StandupDetailPage({
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className={chipClass}>🕐 {standup.time} local</span>
+        <span className={chipClass}>🕐 {formatTime12h(standup.time)} local</span>
         <span className={chipClass}>
           📆 {standup.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}
         </span>
