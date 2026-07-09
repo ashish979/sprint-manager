@@ -8,7 +8,7 @@ import { ensureChannelInfo } from "@/lib/store/channels";
 import { listReports } from "@/lib/store/reports";
 import { getStandup } from "@/lib/store/standups";
 import { getUserProfile } from "@/lib/store/users";
-import type { Report, ReportStatus } from "@/lib/types";
+import type { QuestionConfig, Report, ReportStatus } from "@/lib/types";
 
 import { deleteStandupAction, sendReminderAction, startNowAction } from "../actions";
 
@@ -196,7 +196,7 @@ function AnswerList({
   report,
   blockerIdx,
 }: {
-  standup: { questions: string[] };
+  standup: { questions: QuestionConfig[] };
   report: Report;
   blockerIdx: number;
 }) {
@@ -208,7 +208,7 @@ function AnswerList({
         const blocker = i === blockerIdx && isBlockerAnswer(answer);
         return (
           <div key={i}>
-            <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{question}</dt>
+            <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{question.text}</dt>
             <dd
               className={`mt-0.5 whitespace-pre-wrap text-sm ${
                 blocker

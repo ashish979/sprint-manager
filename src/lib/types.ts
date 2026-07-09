@@ -1,10 +1,16 @@
 /** Domain types for the DynamoDB single-table entities (PLAN.md §2.2). */
 
+export interface QuestionConfig {
+  text: string;
+  /** false = participants can submit without answering this one. */
+  required: boolean;
+}
+
 export interface StandupConfig {
   id: string;
   name: string;
   /** Asked in order; answers align by index. */
-  questions: string[];
+  questions: QuestionConfig[];
   /** Local time "HH:MM" in each participant's timezone, 15-min increments. */
   time: string;
   /** Days the standup runs; 0 = Sunday … 6 = Saturday. */
@@ -28,10 +34,10 @@ export interface StandupConfig {
   updatedAt: string;
 }
 
-export const DEFAULT_QUESTIONS = [
-  "What did you do since last report?",
-  "What will you do today?",
-  "Any blockers?",
+export const DEFAULT_QUESTIONS: QuestionConfig[] = [
+  { text: "What did you do since last report?", required: true },
+  { text: "What will you do today?", required: true },
+  { text: "Any blockers?", required: true },
 ];
 
 export const STANDUP_DEFAULTS = {
@@ -45,7 +51,7 @@ export const STANDUP_DEFAULTS = {
 export interface StandupTemplate {
   id: string;
   label: string;
-  questions: string[];
+  questions: QuestionConfig[];
 }
 
 export const STANDUP_TEMPLATES: StandupTemplate[] = [
@@ -54,20 +60,20 @@ export const STANDUP_TEMPLATES: StandupTemplate[] = [
     id: "retro",
     label: "Sprint Retro",
     questions: [
-      "What went well this sprint?",
-      "What didn't go well?",
-      "What should we change next sprint?",
-      "Any shoutouts?",
+      { text: "What went well this sprint?", required: true },
+      { text: "What didn't go well?", required: true },
+      { text: "What should we change next sprint?", required: true },
+      { text: "Any shoutouts?", required: false },
     ],
   },
   {
     id: "wellbeing",
     label: "Well-being Check-in",
     questions: [
-      "How are you feeling this week (1-5)?",
-      "What's energizing you right now?",
-      "What's draining you right now?",
-      "Anything you need support with?",
+      { text: "How are you feeling this week (1-5)?", required: true },
+      { text: "What's energizing you right now?", required: false },
+      { text: "What's draining you right now?", required: false },
+      { text: "Anything you need support with?", required: false },
     ],
   },
 ];

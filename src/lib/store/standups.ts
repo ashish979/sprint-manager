@@ -2,9 +2,15 @@ import { DeleteCommand, GetCommand, PutCommand, ScanCommand } from "@aws-sdk/lib
 
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
-import type { StandupConfig } from "@/lib/types";
+import type { QuestionConfig, StandupConfig } from "@/lib/types";
 
 const key = (id: string) => ({ pk: `STANDUP#${id}`, sk: "CONFIG" });
+
+/** Standups created before per-question `required` existed stored plain strings. */
+function normalizeQuestions(raw: unknown): QuestionConfig[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((q) => (typeof q === "string" ? { text: q, required: true } : (q as QuestionConfig)));
+}
 
 export async function putStandup(config: StandupConfig): Promise<void> {
   await db.send(
@@ -19,7 +25,9 @@ export async function getStandup(id: string): Promise<StandupConfig | undefined>
   const res = await db.send(
     new GetCommand({ TableName: env.tableName, Key: key(id) }),
   );
-  return res.Item as StandupConfig | undefined;
+  if (!res.Item) return undefined;
+  const item = res.Item as StandupConfig;
+  return { ...item, questions: normalizeQuestions(item.questions) };
 }
 
 /**
@@ -35,7 +43,10 @@ export async function listStandups(): Promise<StandupConfig[]> {
       ExpressionAttributeValues: { ":config": "CONFIG", ":prefix": "STANDUP#" },
     }),
   );
-  return (res.Items ?? []) as StandupConfig[];
+  return ((res.Items ?? []) as StandupConfig[]).map((item) => ({
+    ...item,
+    questions: normalizeQuestions(item.questions),
+  }));
 }
 
 /** Removes the config only; DAY/REPORT history stays queryable. */

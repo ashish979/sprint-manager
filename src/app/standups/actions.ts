@@ -8,7 +8,7 @@ import { resolveRemovedParticipants, sendManualReminder, startStandupNow } from 
 import { deleteStandup, getStandup, putStandup } from "@/lib/store/standups";
 import { ensureUserProfile } from "@/lib/store/users";
 import { timeToMinutes } from "@/lib/tz";
-import { DEFAULT_QUESTIONS, STANDUP_DEFAULTS, type StandupConfig } from "@/lib/types";
+import { DEFAULT_QUESTIONS, STANDUP_DEFAULTS, type QuestionConfig, type StandupConfig } from "@/lib/types";
 
 function parseList(value: string): string[] {
   return value
@@ -29,12 +29,13 @@ function parseParticipants(formData: FormData): string[] {
   return [...new Set([...typed, ...picked])];
 }
 
-/** One FormData entry per question row (QuestionsEditor), in order. */
-function parseQuestions(formData: FormData): string[] {
+/** One JSON-encoded FormData entry per question row (QuestionsEditor), in order. */
+function parseQuestions(formData: FormData): QuestionConfig[] {
   return formData
     .getAll("questions")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+    .map((v) => JSON.parse(String(v)) as QuestionConfig)
+    .map((q) => ({ text: q.text.trim(), required: q.required }))
+    .filter((q) => q.text.length > 0);
 }
 
 export async function createStandupAction(formData: FormData): Promise<void> {
