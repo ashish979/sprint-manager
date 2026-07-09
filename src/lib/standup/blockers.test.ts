@@ -1,21 +1,27 @@
 import { describe, expect, it } from "vitest";
 
+import type { QuestionConfig } from "@/lib/types";
+
 import { blockerQuestionIndex, isBlockerAnswer } from "./blockers";
+
+function q(text: string): QuestionConfig {
+  return { text, required: true };
+}
 
 describe("blockerQuestionIndex", () => {
   it("finds the blocker question", () => {
     expect(
       blockerQuestionIndex([
-        "What did you do since last report?",
-        "What will you do today?",
-        "Any blockers?",
-        "How do you feel?",
+        q("What did you do since last report?"),
+        q("What will you do today?"),
+        q("Any blockers?"),
+        q("How do you feel?"),
       ]),
     ).toBe(2);
   });
 
   it("returns -1 when absent", () => {
-    expect(blockerQuestionIndex(["What's up?"])).toBe(-1);
+    expect(blockerQuestionIndex([q("What's up?")])).toBe(-1);
   });
 });
 

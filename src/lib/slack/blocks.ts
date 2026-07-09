@@ -1,6 +1,6 @@
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
 import { friendlyDate } from "@/lib/tz";
-import type { Report, RotationConfig, StandupConfig } from "@/lib/types";
+import type { QuestionConfig, Report, RotationConfig, StandupConfig } from "@/lib/types";
 
 /** Block Kit builders for all standup surfaces. */
 
@@ -239,14 +239,17 @@ export function answerModal(standup: StandupConfig, meta: ModalMeta): unknown {
     blocks: [
       {
         type: "context",
-        elements: [{ type: "mrkdwn", text: `📝 ${friendlyDate(meta.date)} — every field is optional` }],
+        elements: [{ type: "mrkdwn", text: `📝 ${friendlyDate(meta.date)}` }],
       },
       { type: "divider" },
       ...standup.questions.map((question, i) => ({
         type: "input",
         block_id: `q_${i}`,
-        optional: true,
-        label: { type: "plain_text", text: question.slice(0, 150) },
+        optional: !question.required,
+        label: {
+          type: "plain_text",
+          text: (question.required ? question.text : `${question.text} (optional)`).slice(0, 150),
+        },
         element: {
           type: "plain_text_input",
           action_id: "answer",
@@ -260,7 +263,7 @@ export function answerModal(standup: StandupConfig, meta: ModalMeta): unknown {
 
 /** Answers from a view_submission payload, aligned to question order. */
 export function answersFromView(
-  questions: string[],
+  questions: QuestionConfig[],
   stateValues: Record<string, Record<string, { value?: string | null }>>,
 ): string[] {
   return questions.map((_, i) => stateValues[`q_${i}`]?.answer?.value ?? "");
@@ -271,13 +274,13 @@ export function answersFromView(
 export function replyMessage(
   standup: Pick<StandupConfig, "anonymous">,
   userId: string,
-  questions: string[],
+  questions: QuestionConfig[],
   answers: string[],
 ): { text: string; blocks: unknown[] } {
   const blockerIdx = blockerQuestionIndex(questions);
   const qa = questions
     .map((question, i) => ({
-      question,
+      question: question.text,
       answer: answers[i]?.trim() ?? "",
       isBlocker: i === blockerIdx && isBlockerAnswer(answers[i]?.trim() ?? ""),
     }))

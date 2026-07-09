@@ -1,8 +1,10 @@
 /** Blocker detection for dashboard highlighting (PLAN.md §2.3 step 4). */
 
+import type { QuestionConfig } from "@/lib/types";
+
 /** Index of the blocker question, or -1 if the standup doesn't ask one. */
-export function blockerQuestionIndex(questions: string[]): number {
-  return questions.findIndex((q) => /blocker|blocked|stuck/i.test(q));
+export function blockerQuestionIndex(questions: QuestionConfig[]): number {
+  return questions.findIndex((q) => /blocker|blocked|stuck/i.test(q.text));
 }
 
 const NO_BLOCKER = /^\s*(-+|no|none|nothing|nope|nah|n\/?a|all good|no blockers?\.?)?\s*$/i;
