@@ -9,7 +9,7 @@ display_information:
   background_color: "#4A154B"
 features:
   bot_user:
-    display_name: sprint-manager
+    display_name: Josys Sprint Manager
     always_online: true
   slash_commands:
     - command: /rota
