@@ -9,7 +9,7 @@ import { getStandup } from "@/lib/store/standups";
 import { getUserProfile } from "@/lib/store/users";
 import type { Report, ReportStatus } from "@/lib/types";
 
-import { deleteStandupAction, startNowAction } from "../actions";
+import { deleteStandupAction, sendReminderAction, startNowAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +18,7 @@ const STATUS_BADGE: Record<ReportStatus, { label: string; class: string }> = {
   pending: { label: "⏳ pending", class: "bg-yellow-100 text-yellow-800" },
   skipped: { label: "🏖 skipped", class: "bg-gray-100 text-gray-600" },
   missed: { label: "❌ missed", class: "bg-red-100 text-red-700" },
+  ooo: { label: "🌴 out of office", class: "bg-blue-100 text-blue-800" },
 };
 
 function todayUtc(): string {
@@ -62,6 +63,12 @@ export default async function StandupDetailPage({
         <h1 className="text-2xl font-bold">{standup.name}</h1>
         {admin && (
           <div className="flex gap-2">
+            <Link
+              href={`/standups/${standup.id}/edit`}
+              className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50"
+            >
+              Edit
+            </Link>
             <form action={startNowAction}>
               <input type="hidden" name="id" value={standup.id} />
               <button className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50">
@@ -112,32 +119,74 @@ export default async function StandupDetailPage({
                 </span>
               </div>
 
-              {report?.status === "submitted" && (
-                <dl className="mt-3 space-y-2">
-                  {standup.questions.map((question, i) => {
-                    const answer = report.answers[i]?.trim() ?? "";
-                    if (!answer) return null;
-                    const blocker = i === blockerIdx && isBlockerAnswer(answer);
-                    return (
-                      <div key={i}>
-                        <dt className="text-xs font-medium text-gray-500">{question}</dt>
-                        <dd
-                          className={`mt-0.5 whitespace-pre-wrap text-sm ${
-                            blocker ? "rounded bg-red-50 p-2 font-medium text-red-800" : ""
-                          }`}
-                        >
-                          {blocker && "🚫 "}
-                          {answer}
-                        </dd>
-                      </div>
-                    );
-                  })}
-                </dl>
+              {report?.status === "submitted" && !standup.anonymous && (
+                <AnswerList standup={standup} report={report} blockerIdx={blockerIdx} />
+              )}
+
+              {admin && report?.status === "pending" && (
+                <form action={sendReminderAction} className="mt-2">
+                  <input type="hidden" name="standupId" value={standup.id} />
+                  <input type="hidden" name="date" value={date} />
+                  <input type="hidden" name="userId" value={userId} />
+                  <button className="rounded border px-2 py-1 text-xs hover:bg-gray-50">
+                    Remind ({report.remindersSent} sent)
+                  </button>
+                </form>
               )}
             </li>
           );
         })}
       </ul>
+
+      {standup.anonymous && (
+        <section className="mt-6">
+          <h2 className="text-sm font-semibold text-gray-500">Responses (anonymous)</h2>
+          <ul className="mt-2 space-y-4">
+            {reports
+              .filter((r) => r.status === "submitted")
+              .sort((a, b) => (a.submittedAt ?? "").localeCompare(b.submittedAt ?? ""))
+              .map((report, i) => (
+                <li key={report.userId} className="rounded border p-4">
+                  <div className="text-sm font-medium text-gray-500">Response {i + 1}</div>
+                  <AnswerList standup={standup} report={report} blockerIdx={blockerIdx} />
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
     </main>
+  );
+}
+
+function AnswerList({
+  standup,
+  report,
+  blockerIdx,
+}: {
+  standup: { questions: string[] };
+  report: Report;
+  blockerIdx: number;
+}) {
+  return (
+    <dl className="mt-3 space-y-2">
+      {standup.questions.map((question, i) => {
+        const answer = report.answers[i]?.trim() ?? "";
+        if (!answer) return null;
+        const blocker = i === blockerIdx && isBlockerAnswer(answer);
+        return (
+          <div key={i}>
+            <dt className="text-xs font-medium text-gray-500">{question}</dt>
+            <dd
+              className={`mt-0.5 whitespace-pre-wrap text-sm ${
+                blocker ? "rounded bg-red-50 p-2 font-medium text-red-800" : ""
+              }`}
+            >
+              {blocker && "🚫 "}
+              {answer}
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
   );
 }

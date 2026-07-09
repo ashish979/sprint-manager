@@ -10,90 +10,76 @@ In-house Geekbot (async standups) + Rotation.app (duty rotations) replacement.
 Slack-first, admin web dashboard, hard cost ceiling $5/month on AWS.
 **Full architecture and product spec: PLAN.md.** Repo: github.com/ashish979/sprint-manager.
 
-## Git state (as of 2026-07-08 ~16:00 IST, verified against origin)
+## Git state (as of 2026-07-09, verified against origin)
 
-- `origin/main` = Phase 0 + Phase 1 + Phase 2 merged (PR #1 `bfd7374`, PR #2 `bca090e`,
-  PR #3 `a3f1bf3`).
-- Branch `phase-3-rotations` — Rotations MVP, committed (`0ff983f`), rebased cleanly
-  onto updated `main`, pushed, **PR #4 open** since 2026-07-08T09:29:59Z — **not yet
-  merged**.
-- **Next action: merge PR #4**, then `git checkout main && git pull` before further work.
+- `main` fully merged through PR #6 (deploy-prod). No open PRs.
+- **App is live on AWS, deployed via CI/CD** (`.github/workflows/deploy.yml` — push to
+  `main` → `sst deploy --stage prod` via AWS OIDC role). Region **ap-northeast-1
+  (Tokyo)**. Confirmed working end-to-end by the user: dashboard, standups, rotations,
+  and the inbound Slack flows (buttons, modal, `/rota`, Sign in with Slack).
+- Branch `standups-enhancements` (off latest `main`) — Round 1 of Geekbot
+  basic-feature parity for standups, **implemented and live-verified locally,
+  not yet committed**. See "Standups round 1" below.
 
-## What works right now (verified live in the org's JOSYS Slack workspace)
+## Standups round 1: Geekbot basic-feature parity (this session)
 
-- Full outbound standup loop, locally, no AWS/tunnel:
-  dashboard (http://localhost:3001, dev-bypass session) → create standup → "Start now"
-  → real DM prompt to user + anchor message in channel. `npm run tick` = manual scheduler
-  sweep (prompts due in each tz, reminders, close-at-missed, day close, anchor updates).
-- **Rotations MVP verified live** (2026-07-08): `advanceRotationNow()` called directly
-  (bypassing the dashboard UI, via a throwaway script) against real Slack — channel
-  announce landed in `C0BFQA2H1C3` and the on-duty DM landed for `U07QGT22ZUL`, both
-  confirmed by the user. Shift record + conditional-write idempotency also confirmed.
-  **Not yet tried**: the dashboard UI itself (`/rotations/new` → detail → "Rotate now"
-  button click), multi-member round-robin with more than one real Slack id, override
-  queueing end-to-end, or `usergroupsUsersUpdate` (no test Slack user group id available
-  yet), or `/rota who` (needs a live interactivity/commands URL — see below).
-- Slack app **sprint_manager** (created from scratch, installed in JOSYS workspace,
-  bot scopes: chat:write, im:write, users:read). Token verified via auth.test.
-- User's Slack member id: **U07QGT22ZUL** (DEV_USER + test participant).
-- `.env.local` (gitignored) is fully set up: real bot token, DEV_USER, DynamoDB Local
-  config. DO NOT overwrite it.
+Competitor research (Geekbot, Standuply, DailyBot, Range) produced a 9-item candidate
+list; user picked 6 for this round, all now built on `standups-enhancements`:
 
-## Why some things work locally and some don't (came up 2026-07-08, worth keeping)
+1. **Edit form** — `src/app/standups/[id]/edit/page.tsx` + `updateStandupAction`.
+   Shares a new `src/app/standups/_components/standup-form.tsx` with the create page.
+   Removing a participant auto-resolves their pending report(s) as `"skipped"`
+   (`resolveRemovedParticipants` in `engine.ts`, via new `listOpenDays()` in
+   `reports.ts`) so it can't block `maybeCloseDay` forever.
+2. **Templates** — `STANDUP_TEMPLATES` in `types.ts` (Daily/Retro/Well-being), zero-JS
+   `?template=` query-param picker on both new/edit pages.
+3. **Anonymous responses** — `StandupConfig.anonymous`. Hides identity in the Slack
+   thread reply (`replyMessage` in `blocks.ts`) AND on the admin dashboard itself (a
+   separate unattributed "Responses (anonymous)" section on the detail page) —
+   participation tracking (who has/hasn't responded) stays fully identified.
+4. **Selective reminders** — admin "Remind" button per pending participant on the
+   detail page (`sendManualReminder` in `engine.ts`, `sendReminderAction`). Bypasses
+   `maxReminders` but still increments `remindersSent`.
+5. **Preferred time** — global per-user (`UserProfile.preferredTime`, not per-standup)
+   to avoid a write-race with admin edits. New self-service `/preferences` page
+   (first non-admin write path in the app, `requireSession()` not `requireAdmin()`).
+6. **Out-of-office** — `UserProfile.outOfOffice` (single active range), new `"ooo"`
+   `ReportStatus`. `sweepParticipant` short-circuits before `isPromptDue`, but only
+   creates the terminal `"ooo"` report once a `DAY` already exists (guards against an
+   OOO participant being swept first and prematurely posting the anchor).
 
-The split is **outbound vs. inbound**, not which Slack app or which phase:
+Deferred to later rounds (not built): report history view, result-visibility control,
+CSV export, and all AI/insight features (blocker detection, summarization, sentiment,
+NL Q&A over reports) — these were explicitly out of scope for this round.
 
-- **Outbound** (app → Slack: `chat.postMessage`, `conversations.open`, `views.open`) is
-  just an outgoing HTTPS call — works from anywhere, including `localhost`. This is
-  everything verified live so far: standup DMs/anchors, rotation announce/DM.
-- **Inbound** (Slack → app: button clicks, modal submissions, `/rota`, the "Sign in with
-  Slack" OAuth redirect) requires Slack's servers to call back into a **public** HTTPS
-  URL. `localhost:3001` isn't reachable from the internet, so none of this works without
-  either a tunnel (ngrok) or a real deploy (AWS). User explicitly ruled out ngrok early
-  on — see "What does NOT work yet" below.
-- **Socket Mode** (the user recalled using this on a past project) is a third option:
-  the app dials **out** to Slack over a WebSocket (app-level token, `xapp-...`), and
-  Slack pushes inbound events down that same connection — no public URL needed at all.
-  PLAN.md's architecture deliberately does **not** use it in production ("no Socket
-  Mode, since Lambda is request-driven") because it needs a persistent always-on
-  process, which conflicts with the serverless/$5-budget design. It *could* still be
-  added as **local-dev-only** tooling (a small script run alongside `npm run dev` that
-  forwards Socket Mode payloads into the existing route handlers) to test buttons/
-  modal/`/rota` before ever touching AWS. **Not built — user said "wait" on 2026-07-08,
-  no decision yet between this and going straight to AWS.**
+**Verification done**: `npm run lint && npm run typecheck && npm test && npm run build`
+all pass (45 unit tests, up from 41 — new `isOutOfOffice` cases). Extended
+`scripts/store-smoke.ts` with `listOpenDays`/`setPreferredTime`/`setOutOfOffice`
+coverage, run clean against DynamoDB Local. **Live-verified against real Slack** (not
+just local dashboard): a real standup was OOO-blocked (confirmed nothing spurious
+created while OOO), then prompted normally once OOO cleared, manually reminded, and
+submitted with an anonymized thread reply — user confirmed all messages landed
+correctly in the real workspace. Template picker and edit-form pre-fill confirmed via
+direct page requests. Test data cleaned up.
 
-## What does NOT work yet (by design, no public URL)
+**Not yet done**: commit/push `standups-enhancements` (user hasn't asked yet — full
+plan is at `~/.claude-work/plans/bright-wiggling-stallman.md` if needed for reference).
 
-Answer/Skip buttons, answer modal, thread replies, `/rota`, real Slack sign-in — all
-inbound webhooks (see explanation above). Slack app still needs, from
-slack-manifest.yml: interactivity URL, commands URL, events URL, OAuth redirect + user
-scopes (openid/email/profile) + remaining bot scopes (commands, usergroups:read/write,
-channels:read), then reinstall. **Note: slack-manifest.yml already declares all these
-bot scopes — nothing to add there; it's the live installed app in the workspace that's
-missing them until reinstalled with the full manifest** (which itself needs a real
-public URL to put in the manifest's `<BASE_URL>` placeholders first).
+## What works right now
 
-## What's pending (agreed order)
+- Everything above, plus all of Phase 0–3 (Slack app foundation, standups MVP,
+  rotations MVP) — all live on AWS and confirmed working, including inbound webhooks.
+- Locally: `.env.local` (gitignored) fully set up — real bot token, DEV_USER
+  (**U07QGT22ZUL**), DynamoDB Local config. DO NOT overwrite it.
 
-1. **User**: merge PR #4 (`phase-3-rotations`) to main.
-2. **Decision needed from user** (currently parked as "wait"): unblock inbound testing
-   via local-only Socket Mode, or skip straight to AWS deploy. Nothing built for either
-   yet.
-3. Once decided — if AWS: user runs `aws configure` (ap-south-1), then:
-   `npx sst deploy --stage dev` → 6× `sst secret set` (SlackBotToken,
-   SlackSigningSecret, SlackClientId, SlackClientSecret, SlackTeamId, AuthSecret)
-   → redeploy → update Slack app URLs → seed TEAM#SETTINGS adminSlackIds=[U07QGT22ZUL]
-   → verify buttons/modal/`/rota` work. Check budget email in sst.config.ts
-   (currently `vikasahu09@gmail.com`).
-   - Slack app decision: **reuse the existing `sprint_manager` app** rather than
-     creating a separate dev app — simpler for a solo project; PLAN.md's dev/prod app
-     split is optional, not required.
-   - Credentials to gather before this step: AWS access key + secret (IAM user w/
-     AdministratorAccess to start), SlackSigningSecret + SlackClientId +
-     SlackClientSecret + SlackTeamId (all from api.slack.com/apps → Basic Information),
-     and a generated AuthSecret (e.g. `npx auth secret`).
-4. Later: GitHub OIDC role + `AWS_OIDC_ROLE_ARN` repo var (CI's sst steps skip until set);
-   Phase 4 polish (standup EDIT form is missing, report history, README runbook).
+## What's pending
+
+1. Decide whether to commit/push `standups-enhancements` and open a PR.
+2. Next enhancement round(s), one theme at a time (per the deferred list above), or
+   AI/insight features once the user wants to move past "basic parity."
+3. Longer-standing, not urgent: double-check `TEAM#SETTINGS.adminSlackIds` is seeded
+   with `U07QGT22ZUL` for the real (non-DEV_USER) Slack sign-in path; Phase 4 polish
+   items from PLAN.md (README runbook) not yet done.
 
 ## How to run locally (all of it already set up on this machine)
 
@@ -109,10 +95,13 @@ public URL to put in the manifest's `<BASE_URL>` placeholders first).
 - **Commits: user's git identity only. NEVER add `Co-Authored-By: Claude` or any
   Claude/AI mention in commit messages or PR bodies.** (Also saved in memory.)
 - User prefers step-by-step guidance for Slack/AWS console tasks (new to Slack API).
+- Only commit/push when explicitly asked.
 
 ## Key decisions
 
-- Region ap-south-1; npm; Next.js 15.x; SST v3 Ion; DynamoDB PROVISIONED 5/5 via transform
+- Region **ap-northeast-1**; npm; Next.js 15.x; SST v3 Ion; DynamoDB PROVISIONED 5/5
+- Deploy is CI/CD-driven: push to `main` → GitHub Actions → `sst deploy --stage prod`
+  via AWS OIDC role
 - App code reads plain env vars (never `Resource.*`) — SST injects in cloud, .env.local locally
 - Tick due-check = window (schedule→closeAt) + conditional-write idempotency; cron(0/15 * * * ? *)
 - GSI1 exists but unused so far (config scan is cheaper at ≤5 standups)
@@ -130,6 +119,11 @@ public URL to put in the manifest's `<BASE_URL>` placeholders first).
   SHIFT; PLAN.md's "swap" is just two overrides in opposite directions, same primitive
 - listStandups()/listRotations() scans MUST filter by pk prefix, not just sk="CONFIG" —
   both entities use the same sk and share the table (fixed as part of Phase 3)
+- Preferred time / out-of-office are global per-user (`UserProfile`), not per-standup —
+  avoids a write-race with admin edits (StandupConfig is only ever saved as a full-
+  object put), and rides the existing per-tick `ensureUserProfile` read for free
+- `ensureUserProfile`'s Slack-refresh branch must explicitly preserve `preferredTime`/
+  `outOfOffice` — it rebuilds the profile from scratch on every 20h TTL refresh
 
 ## Gotchas
 
@@ -142,9 +136,13 @@ public URL to put in the manifest's `<BASE_URL>` placeholders first).
 - Slack Web API wrapper uses form-encoding (JSON bodies not accepted by all methods)
 - `usergroups.users.update` wants a comma-joined string for `users`, not JSON — client.ts's
   `call()` JSON.stringifies any object/array value, so join to a string before passing it
+- Don't run `npm run build` (or anything that writes `.next/`) while a `next dev` server
+  is running against the same directory — corrupts the shared `.next/` cache and causes
+  a confusing unrelated-looking `TypeError: a[d] is not a function` in the dev server.
+  Kill the dev server (or use a separate checkout) before building.
 - Local DynamoDB has a stray leftover `smoke1` STANDUP config (participants U_SMOKE_A/B,
-  pre-existing, not from Phase 3) that makes `npm run tick` log a caught `user_not_found`
-  error each run — harmless (per-participant errors are caught), left alone, not investigated
-- Local DynamoDB also has an orphaned `ROTA#live-test-rota` SHIFT item (config already
-  deleted after the live verification test) — harmless, same "config gone, history stays"
-  design as standups
+  pre-existing, harmless) that makes `npm run tick`/sweep log a caught `user_not_found`
+  error each run — harmless (per-participant errors are caught), left alone
+- `startStandupNow` ("start now" admin action) intentionally bypasses OOO and preferred
+  time too, same as it already bypasses the weekday/time schedule — admin override
+  wins over all personalization, consistent by design, not a bug

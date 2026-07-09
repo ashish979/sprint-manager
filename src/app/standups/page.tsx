@@ -30,14 +30,19 @@ export default async function StandupsPage() {
     <main className="mx-auto max-w-3xl p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Standups</h1>
-        {admin && (
-          <Link
-            href="/standups/new"
-            className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80"
-          >
-            New standup
+        <div className="flex items-center gap-3">
+          <Link href="/preferences" className="text-sm text-gray-500 underline">
+            My preferences
           </Link>
-        )}
+          {admin && (
+            <Link
+              href="/standups/new"
+              className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80"
+            >
+              New standup
+            </Link>
+          )}
+        </div>
       </div>
 
       {standups.length === 0 ? (
