@@ -39,7 +39,7 @@ export async function ensureUserProfile(userId: string): Promise<UserProfile | u
     const user = await slack.userInfo(userId);
     const profile: UserProfile = {
       userId,
-      tz: user.tz ?? existing?.tz ?? "UTC",
+      tz: user.tz ?? existing?.tz ?? "Asia/Kolkata",
       name: user.real_name ?? existing?.name,
       // Preserve fields Slack doesn't know about — otherwise this refresh
       // (every 20h) silently wipes them.
