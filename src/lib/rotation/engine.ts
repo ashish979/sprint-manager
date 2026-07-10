@@ -3,6 +3,7 @@ import { slack } from "@/lib/slack/client";
 import { deleteOverride, getOverride } from "@/lib/store/overrides";
 import { getRotation, listRotations, putRotation } from "@/lib/store/rotations";
 import { createShiftIfAbsent, getLatestShift } from "@/lib/store/shifts";
+import { todayIst } from "@/lib/tz";
 import type { RotationConfig } from "@/lib/types";
 
 import { isShiftDue } from "./schedule";
@@ -13,11 +14,13 @@ import { isShiftDue } from "./schedule";
  *
  * Idempotency: shift creation is a conditional DynamoDB write, so a
  * retried or overlapping tick never double-announces or double-syncs.
+ *
+ * The day boundary is IST (todayIst), not UTC — a rotation has no single
+ * participant to anchor a timezone to the way standups do, so it uses the
+ * app's shared reference timezone instead. This is what previously caused
+ * daily/weekly rotations to roll over (and announce) at 00:00 UTC, i.e.
+ * 5:30 AM IST.
  */
-
-function todayUtc(now: Date): string {
-  return now.toISOString().slice(0, 10);
-}
 
 // --- Tick sweep ---
 
@@ -33,7 +36,7 @@ export async function sweep(now: Date = new Date()): Promise<void> {
 }
 
 async function sweepRotation(rotation: RotationConfig, now: Date): Promise<void> {
-  const today = todayUtc(now);
+  const today = todayIst(now);
   const latest = await getLatestShift(rotation.id);
   if (!isShiftDue(rotation.cadence, today, latest?.startDate)) return;
   await rotate(rotation, today);
@@ -90,5 +93,5 @@ async function rotate(rotation: RotationConfig, date: string): Promise<void> {
 export async function advanceRotationNow(rotationId: string): Promise<void> {
   const rotation = await getRotation(rotationId);
   if (!rotation) throw new Error(`rotation ${rotationId} not found`);
-  await rotate(rotation, todayUtc(new Date()));
+  await rotate(rotation, todayIst(new Date()));
 }

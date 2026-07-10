@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatTime12h, friendlyDate, localParts, timeToMinutes } from "./tz";
+import { formatTime12h, friendlyDate, localParts, timeToMinutes, todayIst } from "./tz";
 
 describe("localParts", () => {
   // 2026-07-08T04:30:00Z = 10:00 IST (UTC+5:30) = 21:30 PDT on Jul 7 (UTC-7)
@@ -58,5 +58,16 @@ describe("formatTime12h", () => {
 
   it("returns garbage input unchanged", () => {
     expect(formatTime12h("garbage")).toBe("garbage");
+  });
+});
+
+describe("todayIst", () => {
+  it("is ahead of the UTC date once IST has crossed midnight but UTC hasn't", () => {
+    // 2026-07-08T20:00:00Z = 2026-07-09T01:30 IST — already tomorrow in IST.
+    expect(todayIst(new Date("2026-07-08T20:00:00Z"))).toBe("2026-07-09");
+  });
+
+  it("matches the UTC date mid-day, when both are on the same calendar day", () => {
+    expect(todayIst(new Date("2026-07-08T04:30:00Z"))).toBe("2026-07-08");
   });
 });

@@ -8,15 +8,11 @@ import { getLatestShift, getShift } from "@/lib/store/shifts";
 import { listStandups } from "@/lib/store/standups";
 import { sendManualReminder } from "@/lib/standup/engine";
 import { getUserProfile } from "@/lib/store/users";
-import { friendlyDate, localParts } from "@/lib/tz";
+import { friendlyDate, localParts, todayIst } from "@/lib/tz";
 import type { StandupConfig } from "@/lib/types";
 
 function ephemeral(text: string) {
   return NextResponse.json({ response_type: "ephemeral", text });
-}
-
-function todayUtc(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 async function findStandupByName(name: string): Promise<StandupConfig | undefined> {
@@ -38,7 +34,7 @@ async function handleRemind(name: string, requesterId: string | null) {
   let reminded = 0;
   for (const participantId of standup.participants) {
     const profile = await getUserProfile(participantId);
-    const date = localParts(new Date(), profile?.tz ?? "UTC").date;
+    const date = localParts(new Date(), profile?.tz ?? "Asia/Kolkata").date;
     const report = await getReport(standup.id, date, participantId);
     if (report?.status !== "pending") continue;
     try {
@@ -79,7 +75,7 @@ async function handleRotaCommand(text: string) {
   );
   if (!rotation) return ephemeral(`No rotation named "${name}".`);
 
-  const shift = (await getShift(rotation.id, todayUtc())) ?? (await getLatestShift(rotation.id));
+  const shift = (await getShift(rotation.id, todayIst())) ?? (await getLatestShift(rotation.id));
   if (!shift) return ephemeral(`*${rotation.name}* hasn't rotated yet.`);
 
   const next = rotation.members[rotation.cursor % rotation.members.length];
