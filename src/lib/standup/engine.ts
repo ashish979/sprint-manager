@@ -64,7 +64,7 @@ async function sweepParticipant(
   now: Date,
 ): Promise<void> {
   const profile = await ensureUserProfile(userId);
-  const tz = profile?.tz ?? "UTC";
+  const tz = profile?.tz ?? "Asia/Kolkata";
   const local = localParts(now, tz);
 
   // A personal preferred time overrides the standup's default start time only
@@ -217,7 +217,7 @@ export async function startStandupNow(standupId: string): Promise<void> {
   const now = new Date();
   for (const userId of standup.participants) {
     const profile = await ensureUserProfile(userId);
-    const local = localParts(now, profile?.tz ?? "UTC");
+    const local = localParts(now, profile?.tz ?? "Asia/Kolkata");
     await promptParticipant(standup, userId, local.date, now);
   }
 }

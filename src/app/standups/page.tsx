@@ -5,15 +5,11 @@ import { getSession } from "@/lib/session";
 import { ensureChannelInfo } from "@/lib/store/channels";
 import { getDay } from "@/lib/store/reports";
 import { listStandups } from "@/lib/store/standups";
-import { formatTime12h } from "@/lib/tz";
+import { formatTime12h, todayIst } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
-function todayUtc(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 const STATUS_BADGE = {
   closed: { label: "Closed", className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300" },
@@ -50,7 +46,7 @@ export default async function StandupsPage() {
   const channelInfos = await Promise.all(uniqueChannelIds.map((id) => ensureChannelInfo(id)));
   const channelNameById = new Map(uniqueChannelIds.map((id, i) => [id, channelInfos[i]?.name]));
 
-  const today = todayUtc();
+  const today = todayIst();
   const todaysDays = await Promise.all(standups.map((s) => getDay(s.id, today)));
   const statusById = new Map(
     standups.map((s, i) => [s.id, todaysDays[i] ? todaysDays[i]!.status : "notStarted"] as const),

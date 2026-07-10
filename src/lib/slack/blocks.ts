@@ -1,6 +1,6 @@
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
-import { friendlyDate } from "@/lib/tz";
-import type { QuestionConfig, Report, RotationConfig, StandupConfig } from "@/lib/types";
+import { formatTime12h, friendlyDate } from "@/lib/tz";
+import { ROTATION_DEFAULTS, type QuestionConfig, type Report, type RotationConfig, type StandupConfig } from "@/lib/types";
 
 /** Block Kit builders for all standup surfaces. */
 
@@ -345,7 +345,17 @@ export function shiftAnnounceMessage(
           text: `🔄 *${rotation.name}*\n${mention(assignee)} is on duty starting ${friendlyDate(date)}.`,
         },
       },
-      { type: "context", elements: [{ type: "mrkdwn", text: `Rotates ${rotation.cadence}` }] },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `Rotates ${rotation.cadence} at ${formatTime12h(
+              rotation.announceTime ?? ROTATION_DEFAULTS.announceTime,
+            )} IST`,
+          },
+        ],
+      },
     ],
   };
 }

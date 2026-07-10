@@ -9,7 +9,7 @@ import { ensureChannelInfo } from "@/lib/store/channels";
 import { getDay, listReports } from "@/lib/store/reports";
 import { getStandup } from "@/lib/store/standups";
 import { getUserProfile } from "@/lib/store/users";
-import { formatTime12h } from "@/lib/tz";
+import { formatTime12h, todayIst } from "@/lib/tz";
 import type { QuestionConfig, Report, ReportStatus } from "@/lib/types";
 
 import { deleteStandupAction, sendReminderAction, startNowAction } from "../actions";
@@ -43,10 +43,6 @@ const STATUS_BADGE: Record<ReportStatus, { label: string; class: string }> = {
   },
 };
 
-function todayUtc(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 const DAY_STATUS_BADGE = {
   closed: { label: "Closed", class: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300" },
   open: {
@@ -74,7 +70,7 @@ export default async function StandupDetailPage({
   if (!standup) notFound();
 
   const { date: rawDate } = await searchParams;
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate ?? "") ? rawDate! : todayUtc();
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate ?? "") ? rawDate! : todayIst();
 
   const [reports, admin, profiles, channelInfo, day] = await Promise.all([
     listReports(standup.id, date),
@@ -93,7 +89,7 @@ export default async function StandupDetailPage({
   // "Start now" always prompts for today regardless of which date is being
   // viewed above — so whether to show it must check today specifically, not
   // whatever `date` the admin has navigated to via the report date picker.
-  const today = todayUtc();
+  const today = todayIst();
   const todayDay = date === today ? day : await getDay(standup.id, today);
 
   return (

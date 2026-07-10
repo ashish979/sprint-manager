@@ -1,11 +1,13 @@
+import { timeToMinutes } from "@/lib/tz";
 import type { Cadence } from "@/lib/types";
 
 /**
  * Pure cadence math for the tick sweep (PLAN.md §2.4).
  *
  * Unlike standups, a rotation's shift boundary isn't per-participant
- * timezone — one calendar-date boundary applies to the whole rotation, so
- * this works entirely in plain yyyy-mm-dd strings (UTC).
+ * timezone — one shared IST reference clock applies to the whole rotation
+ * (the team is India-based, so there's no per-member timezone to anchor to
+ * the way standups do).
  */
 
 function addDays(date: string, days: number): string {
@@ -48,11 +50,23 @@ export function nextShiftDate(cadence: Cadence, from: string): string {
 }
 
 /**
- * Should a new shift start today? True immediately if the rotation has
- * never fired — same "window, not exact-time-match" idempotency approach
- * as the standup scheduler: a delayed tick still catches up.
+ * Should a new shift start now? `announceTime` ("HH:MM", IST) is the earliest
+ * local time of day a shift may start — same "window, not exact-time-match"
+ * idempotency approach as the standup scheduler: a delayed tick still
+ * catches up regardless of time of day once the due *date* has passed, it
+ * only gates the very first tick on the due date itself.
  */
-export function isShiftDue(cadence: Cadence, today: string, lastStartDate?: string): boolean {
-  if (!lastStartDate) return true;
-  return today >= nextShiftDate(cadence, lastStartDate);
+export function isShiftDue(
+  cadence: Cadence,
+  local: { date: string; minutes: number },
+  announceTime: string,
+  lastStartDate?: string,
+): boolean {
+  const announceMinutes = timeToMinutes(announceTime);
+  if (!lastStartDate) return local.minutes >= announceMinutes;
+
+  const dueDate = nextShiftDate(cadence, lastStartDate);
+  if (local.date < dueDate) return false;
+  if (local.date === dueDate) return local.minutes >= announceMinutes;
+  return true; // overdue — a delayed tick catches up any time of day
 }

@@ -3,7 +3,8 @@ import { slack } from "@/lib/slack/client";
 import { deleteOverride, getOverride } from "@/lib/store/overrides";
 import { getRotation, listRotations, putRotation } from "@/lib/store/rotations";
 import { createShiftIfAbsent, getLatestShift } from "@/lib/store/shifts";
-import type { RotationConfig } from "@/lib/types";
+import { localParts, todayIst } from "@/lib/tz";
+import { ROTATION_DEFAULTS, type RotationConfig } from "@/lib/types";
 
 import { isShiftDue } from "./schedule";
 
@@ -13,11 +14,15 @@ import { isShiftDue } from "./schedule";
  *
  * Idempotency: shift creation is a conditional DynamoDB write, so a
  * retried or overlapping tick never double-announces or double-syncs.
+ *
+ * The day boundary — and the announceTime gate within it — is IST, not
+ * UTC: a rotation has no single participant to anchor a timezone to the
+ * way standups do, so it uses the app's shared reference timezone
+ * instead. Before announceTime existed, rotations rolled over (and
+ * announced) the instant the IST calendar date changed, i.e. right at
+ * midnight IST — itself a fix for the original bug of rolling over at
+ * 00:00 UTC (5:30 AM IST).
  */
-
-function todayUtc(now: Date): string {
-  return now.toISOString().slice(0, 10);
-}
 
 // --- Tick sweep ---
 
@@ -33,10 +38,11 @@ export async function sweep(now: Date = new Date()): Promise<void> {
 }
 
 async function sweepRotation(rotation: RotationConfig, now: Date): Promise<void> {
-  const today = todayUtc(now);
+  const local = localParts(now, "Asia/Kolkata");
   const latest = await getLatestShift(rotation.id);
-  if (!isShiftDue(rotation.cadence, today, latest?.startDate)) return;
-  await rotate(rotation, today);
+  const announceTime = rotation.announceTime ?? ROTATION_DEFAULTS.announceTime;
+  if (!isShiftDue(rotation.cadence, local, announceTime, latest?.startDate)) return;
+  await rotate(rotation, local.date);
 }
 
 /**
@@ -90,5 +96,5 @@ async function rotate(rotation: RotationConfig, date: string): Promise<void> {
 export async function advanceRotationNow(rotationId: string): Promise<void> {
   const rotation = await getRotation(rotationId);
   if (!rotation) throw new Error(`rotation ${rotationId} not found`);
-  await rotate(rotation, todayUtc(new Date()));
+  await rotate(rotation, todayIst(new Date()));
 }

@@ -61,6 +61,16 @@ export function formatTime12h(time: string): string {
   return `${hour12}:${mins} ${period}`;
 }
 
+/**
+ * "Today" in IST — the app's single shared reference timezone for day-boundary
+ * logic (rotation cadence, dashboard date defaults, /rota lookups). Standup
+ * scheduling itself still prefers each participant's own Slack-profile
+ * timezone where one exists; this is the fallback/shared-boundary case.
+ */
+export function todayIst(now: Date = new Date()): string {
+  return localParts(now, "Asia/Kolkata").date;
+}
+
 /** Human date for messages: "2026-07-08" → "Wed, Jul 8". */
 export function friendlyDate(date: string): string {
   return new Intl.DateTimeFormat("en-US", {

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { timeToMinutes } from "@/lib/tz";
+
 import { isShiftDue, nextShiftDate } from "./schedule";
+
+function at(date: string, time: string) {
+  return { date, minutes: timeToMinutes(time) };
+}
 
 describe("nextShiftDate", () => {
   it("daily advances by one day", () => {
@@ -35,19 +41,21 @@ describe("nextShiftDate", () => {
 });
 
 describe("isShiftDue", () => {
-  it("is due immediately if the rotation has never fired", () => {
-    expect(isShiftDue("weekly", "2026-07-08", undefined)).toBe(true);
+  it("a brand-new rotation waits for announceTime, not just any tick", () => {
+    expect(isShiftDue("weekly", at("2026-07-08", "09:00"), "09:30", undefined)).toBe(false);
+    expect(isShiftDue("weekly", at("2026-07-08", "09:30"), "09:30", undefined)).toBe(true);
   });
 
-  it("is not due before the next boundary", () => {
-    expect(isShiftDue("weekly", "2026-07-10", "2026-07-08")).toBe(false);
+  it("is not due before the next boundary date, regardless of time", () => {
+    expect(isShiftDue("weekly", at("2026-07-10", "23:00"), "09:30", "2026-07-08")).toBe(false);
   });
 
-  it("is due exactly on the boundary date", () => {
-    expect(isShiftDue("weekly", "2026-07-15", "2026-07-08")).toBe(true);
+  it("on the boundary date, waits for announceTime", () => {
+    expect(isShiftDue("weekly", at("2026-07-15", "09:00"), "09:30", "2026-07-08")).toBe(false);
+    expect(isShiftDue("weekly", at("2026-07-15", "09:30"), "09:30", "2026-07-08")).toBe(true);
   });
 
-  it("is still due after a missed boundary (delayed tick catches up)", () => {
-    expect(isShiftDue("weekly", "2026-07-20", "2026-07-08")).toBe(true);
+  it("is still due after a missed boundary regardless of time (delayed tick catches up)", () => {
+    expect(isShiftDue("weekly", at("2026-07-20", "00:00"), "09:30", "2026-07-08")).toBe(true);
   });
 });

@@ -153,12 +153,19 @@ export interface RotationConfig {
    * a member's turn is overridden or skipped.
    */
   cursor: number;
+  /**
+   * Local time "HH:MM" (IST — the whole team is India-based, so unlike
+   * standups there's no per-member timezone to anchor to), 15-min
+   * increments. A shift due today won't actually fire until this time.
+   */
+  announceTime?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export const ROTATION_DEFAULTS = {
   cadence: "weekly" as Cadence,
+  announceTime: "09:30",
 };
 
 export type ShiftSource = "auto" | "override" | "swap";

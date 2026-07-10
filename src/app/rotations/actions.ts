@@ -8,6 +8,7 @@ import { advanceRotationNow } from "@/lib/rotation/engine";
 import { putOverride } from "@/lib/store/overrides";
 import { deleteRotation, getRotation, putRotation } from "@/lib/store/rotations";
 import { ensureUserProfile } from "@/lib/store/users";
+import { timeToMinutes } from "@/lib/tz";
 import { ROTATION_DEFAULTS, type Cadence, type RotationConfig } from "@/lib/types";
 
 const CADENCES: Cadence[] = ["daily", "weekdays", "weekly", "biweekly", "monthly"];
@@ -39,12 +40,17 @@ export async function createRotationAction(formData: FormData): Promise<void> {
   const members = parseMembers(formData);
   const usergroupId = String(formData.get("usergroupId") ?? "").trim();
   const cadence = String(formData.get("cadence") ?? ROTATION_DEFAULTS.cadence) as Cadence;
+  const announceTime = String(formData.get("announceTime") ?? "") || ROTATION_DEFAULTS.announceTime;
 
   if (!name || !channel || members.length === 0) {
     throw new Error("name, channel, and members are required");
   }
   if (!CADENCES.includes(cadence)) {
     throw new Error("invalid cadence");
+  }
+  const announceMinutes = timeToMinutes(announceTime);
+  if (!Number.isFinite(announceMinutes) || announceMinutes % 15 !== 0) {
+    throw new Error("announceTime must be in 15-minute increments (matches the scheduler tick)");
   }
 
   const now = new Date().toISOString();
@@ -55,6 +61,7 @@ export async function createRotationAction(formData: FormData): Promise<void> {
     members,
     cadence,
     usergroupId: usergroupId || undefined,
+    announceTime,
     cursor: 0,
     createdAt: now,
     updatedAt: now,
@@ -88,12 +95,17 @@ export async function updateRotationAction(formData: FormData): Promise<void> {
   const members = parseMembers(formData);
   const usergroupId = String(formData.get("usergroupId") ?? "").trim();
   const cadence = String(formData.get("cadence") ?? ROTATION_DEFAULTS.cadence) as Cadence;
+  const announceTime = String(formData.get("announceTime") ?? "") || ROTATION_DEFAULTS.announceTime;
 
   if (!name || !channel || members.length === 0) {
     throw new Error("name, channel, and members are required");
   }
   if (!CADENCES.includes(cadence)) {
     throw new Error("invalid cadence");
+  }
+  const announceMinutes = timeToMinutes(announceTime);
+  if (!Number.isFinite(announceMinutes) || announceMinutes % 15 !== 0) {
+    throw new Error("announceTime must be in 15-minute increments (matches the scheduler tick)");
   }
 
   const config: RotationConfig = {
@@ -103,6 +115,7 @@ export async function updateRotationAction(formData: FormData): Promise<void> {
     members,
     cadence,
     usergroupId: usergroupId || undefined,
+    announceTime,
     // Members can shrink/reorder — clamp so cursor still points at a valid index.
     cursor: existing.cursor % members.length,
     updatedAt: new Date().toISOString(),
