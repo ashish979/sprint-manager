@@ -98,20 +98,32 @@ export function RotationForm({
         />
       </label>
 
-      <label className={labelClass}>
-        Cadence
-        <select
-          name="cadence"
-          defaultValue={rotation?.cadence ?? ROTATION_DEFAULTS.cadence}
-          className={inputClass}
-        >
-          {CADENCES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="mt-4 flex gap-6">
+        <label className="text-sm font-medium">
+          Cadence
+          <select
+            name="cadence"
+            defaultValue={rotation?.cadence ?? ROTATION_DEFAULTS.cadence}
+            className={inputClass}
+          >
+            {CADENCES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm font-medium">
+          Announce time (IST)
+          <input
+            type="time"
+            name="announceTime"
+            step={900}
+            defaultValue={rotation?.announceTime ?? ROTATION_DEFAULTS.announceTime}
+            className={inputClass}
+          />
+        </label>
+      </div>
 
       <button
         type="submit"

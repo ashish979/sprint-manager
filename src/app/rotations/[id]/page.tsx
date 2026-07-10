@@ -10,7 +10,8 @@ import { ensureChannelInfo } from "@/lib/store/channels";
 import { getRotation } from "@/lib/store/rotations";
 import { getLatestShift, listShifts } from "@/lib/store/shifts";
 import { getUserProfile } from "@/lib/store/users";
-import type { ShiftSource } from "@/lib/types";
+import { formatTime12h } from "@/lib/tz";
+import { ROTATION_DEFAULTS, type ShiftSource } from "@/lib/types";
 
 import { deleteRotationAction, queueOverrideAction, rotateNowAction } from "../actions";
 
@@ -89,6 +90,9 @@ export default async function RotationDetailPage({
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <span className={chipClass}>🔁 {rotation.cadence}</span>
+        <span className={chipClass}>
+          🕐 {formatTime12h(rotation.announceTime ?? ROTATION_DEFAULTS.announceTime)} IST
+        </span>
         <span className={chipClass}>#{channelInfo?.name ?? rotation.channel}</span>
         {rotation.usergroupId && <span className={chipClass}>👥 {rotation.usergroupId}</span>}
       </div>
