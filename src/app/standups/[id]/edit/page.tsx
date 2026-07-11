@@ -27,30 +27,26 @@ export default async function EditStandupPage({
   const [{ template }, users] = await Promise.all([searchParams, listUserOptions()]);
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <Link href={`/standups/${id}`} className="text-sm text-zinc-500 underline dark:text-zinc-400">
+    <main className="mx-auto max-w-2xl p-6">
+      <Link href={`/standups/${id}`} className="link link-hover text-sm text-base-content/60">
         ← {standup.name}
       </Link>
 
-      <h1 className="mt-2 text-2xl font-bold">Edit standup</h1>
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+      <h1 className="mt-3 text-2xl font-bold">Edit standup</h1>
+      <p className="mt-1 text-sm text-base-content/60">
         Removing a participant marks their currently pending report(s) as skipped so
         today&apos;s standup can still close.
       </p>
 
-      <p className="mt-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+      <p className="mt-4 text-sm font-medium text-base-content/60">
         Replace questions from a template
       </p>
-      <div className="mt-2 flex gap-2">
+      <div className="mt-2 flex flex-wrap gap-2">
         {STANDUP_TEMPLATES.map((t) => (
           <Link
             key={t.id}
             href={`/standups/${id}/edit?template=${t.id}`}
-            className={`rounded border px-3 py-1 text-sm dark:border-zinc-700 ${
-              template === t.id
-                ? "bg-black text-white dark:bg-white dark:text-black"
-                : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
-            }`}
+            className={`btn btn-sm ${template === t.id ? "btn-primary" : "btn-outline"}`}
           >
             {t.label}
           </Link>

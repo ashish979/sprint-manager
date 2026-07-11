@@ -61,6 +61,11 @@ export const slack = {
     await call("chat.update", { ...args });
   },
 
+  /** Deletes one of the bot's own messages (used to clean up a duplicate anchor). */
+  async deleteMessage(channel: string, ts: string): Promise<void> {
+    await call("chat.delete", { channel, ts });
+  },
+
   /** Opens (or fetches) the DM channel with a user; returns its id. */
   async openDm(userId: string): Promise<string> {
     const res = await call<SlackResponse & { channel: { id: string } }>(

@@ -10,23 +10,20 @@ interface Option {
 
 const classNames = {
   control: () =>
-    "mt-1 rounded border px-2 py-1 text-sm border-gray-300 bg-white dark:border-zinc-700 dark:bg-zinc-800",
-  placeholder: () => "text-zinc-400 dark:text-zinc-500",
-  input: () => "text-zinc-900 dark:text-zinc-100",
-  singleValue: () => "text-zinc-900 dark:text-zinc-100",
-  menu: () =>
-    "mt-1 rounded border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800 z-10",
+    "mt-1 rounded-field border border-base-300 bg-base-100 px-2 py-1 text-sm",
+  placeholder: () => "text-base-content/40",
+  input: () => "text-base-content",
+  singleValue: () => "text-base-content",
+  menu: () => "mt-1 rounded-box border border-base-300 bg-base-100 shadow-lg z-10",
   option: ({ isFocused }: { isFocused: boolean }) =>
-    `px-3 py-2 text-sm cursor-pointer ${
-      isFocused ? "bg-zinc-100 dark:bg-zinc-700" : "dark:text-zinc-100"
-    }`,
+    `px-3 py-2 text-sm cursor-pointer ${isFocused ? "bg-base-200" : ""}`,
   multiValue: () =>
-    "bg-zinc-100 dark:bg-zinc-700 rounded pl-2 pr-1 py-0.5 mr-1 my-0.5 text-sm inline-flex items-center gap-1",
-  multiValueLabel: () => "text-sm dark:text-zinc-100",
-  multiValueRemove: () => "cursor-pointer text-zinc-500 hover:text-red-500 rounded",
-  clearIndicator: () => "cursor-pointer text-zinc-500 hover:text-red-500 px-1",
-  dropdownIndicator: () => "text-zinc-400 px-1",
-  indicatorSeparator: () => "bg-zinc-300 dark:bg-zinc-600",
+    "bg-primary/10 text-primary rounded pl-2 pr-1 py-0.5 mr-1 my-0.5 text-sm inline-flex items-center gap-1",
+  multiValueLabel: () => "text-sm",
+  multiValueRemove: () => "cursor-pointer text-base-content/50 hover:text-error rounded",
+  clearIndicator: () => "cursor-pointer text-base-content/50 hover:text-error px-1",
+  dropdownIndicator: () => "text-base-content/40 px-1",
+  indicatorSeparator: () => "bg-base-300",
 };
 
 /**
@@ -60,9 +57,7 @@ export function ParticipantPicker({
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return (
-      <div className="mt-1 h-9 animate-pulse rounded border bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800" />
-    );
+    return <div className="mt-1 h-9 animate-pulse rounded-field border border-base-300 bg-base-200" />;
   }
 
   return (

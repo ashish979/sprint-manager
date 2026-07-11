@@ -22,26 +22,20 @@ export default async function NewStandupPage({
   const activeTemplate = template ?? "daily";
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <Link href="/standups" className="text-sm text-zinc-500 underline dark:text-zinc-400">
+    <main className="mx-auto max-w-2xl p-6">
+      <Link href="/standups" className="link link-hover text-sm text-base-content/60">
         ← All standups
       </Link>
 
-      <h1 className="mt-2 text-2xl font-bold">New standup</h1>
+      <h1 className="mt-3 text-2xl font-bold">New standup</h1>
 
-      <p className="mt-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-        Start from a template
-      </p>
-      <div className="mt-2 flex gap-2">
+      <p className="mt-4 text-sm font-medium text-base-content/60">Start from a template</p>
+      <div className="mt-2 flex flex-wrap gap-2">
         {STANDUP_TEMPLATES.map((t) => (
           <Link
             key={t.id}
             href={`/standups/new?template=${t.id}`}
-            className={`rounded border px-3 py-1 text-sm dark:border-zinc-700 ${
-              activeTemplate === t.id
-                ? "bg-black text-white dark:bg-white dark:text-black"
-                : "hover:bg-zinc-50 dark:hover:bg-zinc-800"
-            }`}
+            className={`btn btn-sm ${activeTemplate === t.id ? "btn-primary" : "btn-outline"}`}
           >
             {t.label}
           </Link>

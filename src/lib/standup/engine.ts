@@ -12,6 +12,7 @@ import {
 } from "@/lib/slack/blocks";
 import { slack } from "@/lib/slack/client";
 import {
+  claimDayThread,
   closeDay,
   createDayIfAbsent,
   createReportIfAbsent,
@@ -22,7 +23,6 @@ import {
   listReports,
   markReportIfPending,
   saveSubmission,
-  setDayThread,
   setReportDm,
 } from "@/lib/store/reports";
 import { getStandup, listStandups } from "@/lib/store/standups";
@@ -263,16 +263,21 @@ async function ensureDayWithAnchor(
     status: "open",
     createdAt: new Date().toISOString(),
   });
-  if (!day.threadTs) {
-    const ts = await slack.postMessage({
-      channel: standup.channel,
-      ...anchorMessage(standup, date, [], "open"),
-    });
-    await setDayThread(standup.id, date, ts);
-    // Re-read: a concurrent tick may have won the if_not_exists race.
-    return (await getDay(standup.id, date)) ?? { ...day, threadTs: ts };
-  }
-  return day;
+  if (day.threadTs) return day;
+
+  // Post the anchor, then atomically claim the thread slot. Posting isn't
+  // idempotent, so two concurrent callers (e.g. an admin "Start now" racing
+  // the scheduled tick) can each post one — but only one wins claimDayThread.
+  // The loser deletes its duplicate so the channel keeps a single anchor.
+  const ts = await slack.postMessage({
+    channel: standup.channel,
+    ...anchorMessage(standup, date, [], "open"),
+  });
+  const won = await claimDayThread(standup.id, date, ts);
+  if (won) return { ...day, threadTs: ts };
+
+  await slack.deleteMessage(standup.channel, ts).catch(() => {});
+  return (await getDay(standup.id, date)) ?? { ...day, threadTs: ts };
 }
 
 // --- Interactivity flows ---

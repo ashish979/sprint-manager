@@ -7,7 +7,7 @@ import {
   listReports,
   markReportIfPending,
   saveSubmission,
-  setDayThread,
+  claimDayThread,
 } from "../src/lib/store/reports";
 import { deleteOverride, getOverride, putOverride } from "../src/lib/store/overrides";
 import { deleteRotation, getRotation, listRotations, putRotation } from "../src/lib/store/rotations";
@@ -51,9 +51,9 @@ async function main() {
     status: "open",
     createdAt: new Date().toISOString(),
   });
-  await setDayThread(SMOKE_ID, date, "111.222");
+  assert(await claimDayThread(SMOKE_ID, date, "111.222"), "claimDayThread wins when unset");
   assert((await getDay(SMOKE_ID, date))?.threadTs === "111.222", "day + threadTs");
-  await setDayThread(SMOKE_ID, date, "999.999");
+  assert(!(await claimDayThread(SMOKE_ID, date, "999.999")), "second claim loses");
   assert((await getDay(SMOKE_ID, date))?.threadTs === "111.222", "threadTs write is first-wins");
 
   assert(

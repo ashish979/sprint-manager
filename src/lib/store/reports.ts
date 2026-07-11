@@ -57,19 +57,32 @@ export async function createDayIfAbsent(day: StandupDay): Promise<StandupDay> {
   }
 }
 
-export async function setDayThread(
+/**
+ * Atomically record the anchor thread ts. Returns true only if THIS call set
+ * it — i.e. it won the race. A concurrent caller (an admin "Start now"
+ * overlapping the scheduled tick) gets false and must clean up its own
+ * duplicate anchor rather than leave two in the channel.
+ */
+export async function claimDayThread(
   standupId: string,
   date: string,
   threadTs: string,
-): Promise<void> {
-  await db.send(
-    new UpdateCommand({
-      TableName: env.tableName,
-      Key: dayKey(standupId, date),
-      UpdateExpression: "SET threadTs = if_not_exists(threadTs, :ts)",
-      ExpressionAttributeValues: { ":ts": threadTs },
-    }),
-  );
+): Promise<boolean> {
+  try {
+    await db.send(
+      new UpdateCommand({
+        TableName: env.tableName,
+        Key: dayKey(standupId, date),
+        UpdateExpression: "SET threadTs = :ts",
+        ConditionExpression: "attribute_not_exists(threadTs)",
+        ExpressionAttributeValues: { ":ts": threadTs },
+      }),
+    );
+    return true;
+  } catch (error) {
+    if (isConditionalFailure(error)) return false;
+    throw error;
+  }
 }
 
 /** Open days for a standup — used to resolve removed participants' pending reports. */

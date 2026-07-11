@@ -12,25 +12,19 @@ export const dynamic = "force-dynamic";
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 const STATUS_BADGE = {
-  closed: { label: "Closed", className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300" },
-  open: {
-    label: "In progress",
-    className: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-  },
-  notStarted: {
-    label: "Not started",
-    className: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500",
-  },
+  closed: { label: "Closed", className: "badge-ghost" },
+  open: { label: "In progress", className: "badge-success" },
+  notStarted: { label: "Not started", className: "badge-ghost" },
 } as const;
 
 export default async function StandupsPage() {
   const session = await getSession();
   if (!session?.user) {
     return (
-      <main className="mx-auto max-w-3xl p-8">
+      <main className="mx-auto max-w-3xl p-6">
         <h1 className="text-2xl font-bold">Standups</h1>
-        <p className="mt-4 text-zinc-500 dark:text-zinc-400">
-          <Link href="/" className="underline">
+        <p className="mt-4 text-base-content/60">
+          <Link href="/" className="link link-primary">
             Sign in with Slack
           </Link>{" "}
           to view standups.
@@ -53,54 +47,55 @@ export default async function StandupsPage() {
   );
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
+    <main className="mx-auto max-w-3xl p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Standups</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Standups</h1>
+          <p className="text-sm text-base-content/50">Async daily check-ins in Slack.</p>
+        </div>
         {admin && (
-          <Link
-            href="/standups/new"
-            className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80 dark:bg-white dark:text-black dark:hover:opacity-90"
-          >
-            New standup
+          <Link href="/standups/new" className="btn btn-primary btn-sm">
+            + New standup
           </Link>
         )}
       </div>
 
       {standups.length === 0 ? (
-        <p className="mt-8 text-zinc-500 dark:text-zinc-400">
+        <div className="mt-8 rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center text-base-content/60">
           No standups yet{admin ? " — create the first one." : "."}
-        </p>
+        </div>
       ) : (
-        <ul className="mt-6 divide-y rounded border dark:divide-zinc-800 dark:border-zinc-800">
-          {standups.map((s) => (
-            <li key={s.id}>
-              <Link
-                href={`/standups/${s.id}`}
-                className="flex items-center justify-between gap-6 p-5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{s.name}</div>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500 dark:text-zinc-400">
-                    <span>#{channelNameById.get(s.channel) ?? s.channel}</span>
-                    <span aria-hidden>·</span>
-                    <span>{formatTime12h(s.time)}</span>
-                    <span aria-hidden>·</span>
-                    <span>{s.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}</span>
+        <ul className="mt-6 space-y-3">
+          {standups.map((s) => {
+            const status = STATUS_BADGE[statusById.get(s.id) ?? "notStarted"];
+            return (
+              <li key={s.id}>
+                <Link
+                  href={`/standups/${s.id}`}
+                  className="card border border-base-300 bg-base-100 shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <div className="card-body flex-row items-center justify-between gap-6 p-5">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-semibold">{s.name}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-base-content/60">
+                        <span>#{channelNameById.get(s.channel) ?? s.channel}</span>
+                        <span aria-hidden>·</span>
+                        <span>{formatTime12h(s.time)}</span>
+                        <span aria-hidden>·</span>
+                        <span>{s.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}</span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className={`badge badge-sm ${status.className}`}>{status.label}</span>
+                      <span className="text-sm text-base-content/50">
+                        {s.participants.length} member{s.participants.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[statusById.get(s.id) ?? "notStarted"].className}`}
-                  >
-                    {STATUS_BADGE[statusById.get(s.id) ?? "notStarted"].label}
-                  </span>
-                  <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                    {s.participants.length} participant{s.participants.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-              </Link>
-            </li>
-          ))}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </main>
