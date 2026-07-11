@@ -23,13 +23,13 @@ export default async function EditRotationPage({
   const users = await listUserOptions();
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <Link href={`/rotations/${id}`} className="text-sm text-zinc-500 underline dark:text-zinc-400">
+    <main className="mx-auto max-w-2xl p-6">
+      <Link href={`/rotations/${id}`} className="link link-hover text-sm text-base-content/60">
         ← {rotation.name}
       </Link>
 
-      <h1 className="mt-2 text-2xl font-bold">Edit rotation</h1>
-      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+      <h1 className="mt-3 text-2xl font-bold">Edit rotation</h1>
+      <p className="mt-1 text-sm text-base-content/60">
         Changing the member list keeps everyone&apos;s relative order but may shift who&apos;s
         next up.
       </p>

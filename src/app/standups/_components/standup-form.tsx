@@ -16,12 +16,10 @@ const WEEKDAYS = [
   { value: 0, label: "Sun" },
 ];
 
-const inputClass =
-  "mt-1 w-full rounded border px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
-const labelClass = "block text-sm font-medium mt-4";
-const sectionClass = "mt-8 border-t pt-6 dark:border-zinc-800";
-const sectionHeadingClass =
-  "text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400";
+const inputClass = "input w-full";
+const labelClass = "mb-1 mt-4 block text-sm font-medium";
+const cardClass = "card border border-base-300 bg-base-100 shadow-sm";
+const sectionHeadingClass = "text-xs font-semibold uppercase tracking-wide text-base-content/50";
 
 export function StandupForm({
   action,
@@ -62,157 +60,164 @@ export function StandupForm({
   const participantsTextareaDefault = users ? "" : standup?.participants.join(" ");
 
   return (
-    <form action={action} className="mt-6">
+    <form action={action} className="mt-6 space-y-4">
       {standup && <input type="hidden" name="id" value={standup.id} />}
 
-      <section className="mt-6">
-        <h2 className={sectionHeadingClass}>Basics</h2>
+      <section className={cardClass}>
+        <div className="card-body">
+          <h2 className={sectionHeadingClass}>Basics</h2>
 
-        <label className={labelClass}>
-          Name
-          <input
-            name="name"
-            required
-            defaultValue={standup?.name}
-            placeholder="Daily standup"
-            className={inputClass}
-          />
-        </label>
-
-        <label className={labelClass}>
-          Broadcast channel id
-          <input
-            name="channel"
-            required
-            defaultValue={standup?.channel}
-            placeholder="C0123456789 (invite @sprint-manager to it)"
-            className={inputClass}
-          />
-        </label>
-
-        {users && (
-          <div className={labelClass}>
-            Participants
-            <ParticipantPicker
-              name="participantsPicker"
-              options={users.map((u) => ({ value: u.id, label: u.name }))}
-              defaultSelected={currentParticipants}
-            />
-          </div>
-        )}
-
-        <label className={labelClass}>
-          {users
-            ? "Add someone not showing up above, by Slack user id (optional)"
-            : "Participants — Slack user ids, space/comma separated"}
-          <textarea
-            name="participants"
-            rows={2}
-            defaultValue={participantsTextareaDefault}
-            placeholder="U0123ABC U0456DEF"
-            className={inputClass}
-          />
-        </label>
-      </section>
-
-      <section className={sectionClass}>
-        <h2 className={sectionHeadingClass}>Questions</h2>
-        <QuestionsEditor
-          key={template?.id ?? standup?.id ?? "default"}
-          name="questions"
-          defaultQuestions={questionsDefault}
-        />
-      </section>
-
-      <section className={sectionClass}>
-        <h2 className={sectionHeadingClass}>Schedule</h2>
-
-        <div className="mt-4 flex gap-6">
-          <label className="text-sm font-medium">
-            Time (participant’s local)
+          <label className={labelClass}>
+            Name
             <input
-              type="time"
-              name="time"
-              step={900}
-              defaultValue={standup?.time ?? STANDUP_DEFAULTS.time}
+              name="name"
+              required
+              defaultValue={standup?.name}
+              placeholder="Daily standup"
               className={inputClass}
             />
           </label>
-          <fieldset className="text-sm font-medium">
-            Days
-            <div className="mt-2 flex gap-3">
-              {WEEKDAYS.map((d) => (
-                <label key={d.value} className="flex items-center gap-1 font-normal">
-                  <input
-                    type="checkbox"
-                    name="weekdays"
-                    value={d.value}
-                    defaultChecked={(weekdays as readonly number[]).includes(d.value)}
-                  />
-                  {d.label}
-                </label>
-              ))}
+
+          <label className={labelClass}>
+            Broadcast channel id
+            <input
+              name="channel"
+              required
+              defaultValue={standup?.channel}
+              placeholder="C0123456789 (invite @sprint-manager to it)"
+              className={inputClass}
+            />
+          </label>
+
+          {users && (
+            <div className={labelClass}>
+              Participants
+              <ParticipantPicker
+                name="participantsPicker"
+                options={users.map((u) => ({ value: u.id, label: u.name }))}
+                defaultSelected={currentParticipants}
+              />
             </div>
-          </fieldset>
-        </div>
+          )}
 
-        <div className="mt-4 flex gap-6">
-          <label className="text-sm font-medium">
-            Remind after (minutes)
-            <input
-              type="number"
-              name="remindAfterMinutes"
-              min={15}
-              step={15}
-              defaultValue={standup?.remindAfterMinutes ?? STANDUP_DEFAULTS.remindAfterMinutes}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm font-medium">
-            Max reminders
-            <input
-              type="number"
-              name="maxReminders"
-              min={0}
-              max={10}
-              defaultValue={standup?.maxReminders ?? STANDUP_DEFAULTS.maxReminders}
-              className={inputClass}
-            />
-          </label>
-          <label className="text-sm font-medium">
-            Close at (local)
-            <input
-              type="time"
-              name="closeAtTime"
-              step={900}
-              defaultValue={standup?.closeAtTime ?? STANDUP_DEFAULTS.closeAtTime}
-              className={inputClass}
+          <label className={labelClass}>
+            {users
+              ? "Add someone not showing up above, by Slack user id (optional)"
+              : "Participants — Slack user ids, space/comma separated"}
+            <textarea
+              name="participants"
+              rows={2}
+              defaultValue={participantsTextareaDefault}
+              placeholder="U0123ABC U0456DEF"
+              className="textarea w-full"
             />
           </label>
         </div>
       </section>
 
-      <section className={sectionClass}>
-        <h2 className={sectionHeadingClass}>Privacy</h2>
-        <label className="mt-4 flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" name="anonymous" defaultChecked={standup?.anonymous ?? false} />
-          Anonymous responses (hides who wrote what, in Slack and on this dashboard)
-        </label>
+      <section className={cardClass}>
+        <div className="card-body">
+          <h2 className={sectionHeadingClass}>Questions</h2>
+          <QuestionsEditor
+            key={template?.id ?? standup?.id ?? "default"}
+            name="questions"
+            defaultQuestions={questionsDefault}
+          />
+        </div>
       </section>
 
-      <div className="mt-8 flex gap-3">
-        <button
-          type="submit"
-          className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80 dark:bg-white dark:text-black dark:hover:opacity-90"
-        >
+      <section className={cardClass}>
+        <div className="card-body">
+          <h2 className={sectionHeadingClass}>Schedule</h2>
+
+          <div className="mt-4 flex flex-wrap gap-6">
+            <label className="text-sm font-medium">
+              Time (participant’s local)
+              <input
+                type="time"
+                name="time"
+                step={900}
+                defaultValue={standup?.time ?? STANDUP_DEFAULTS.time}
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+            <fieldset className="text-sm font-medium">
+              Days
+              <div className="mt-2 flex flex-wrap gap-3">
+                {WEEKDAYS.map((d) => (
+                  <label key={d.value} className="flex items-center gap-1.5 font-normal">
+                    <input
+                      type="checkbox"
+                      name="weekdays"
+                      value={d.value}
+                      defaultChecked={(weekdays as readonly number[]).includes(d.value)}
+                      className="checkbox checkbox-sm checkbox-primary"
+                    />
+                    {d.label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-6">
+            <label className="text-sm font-medium">
+              Remind after (minutes)
+              <input
+                type="number"
+                name="remindAfterMinutes"
+                min={15}
+                step={15}
+                defaultValue={standup?.remindAfterMinutes ?? STANDUP_DEFAULTS.remindAfterMinutes}
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Max reminders
+              <input
+                type="number"
+                name="maxReminders"
+                min={0}
+                max={10}
+                defaultValue={standup?.maxReminders ?? STANDUP_DEFAULTS.maxReminders}
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+            <label className="text-sm font-medium">
+              Close at (local)
+              <input
+                type="time"
+                name="closeAtTime"
+                step={900}
+                defaultValue={standup?.closeAtTime ?? STANDUP_DEFAULTS.closeAtTime}
+                className={`${inputClass} mt-1`}
+              />
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section className={cardClass}>
+        <div className="card-body">
+          <h2 className={sectionHeadingClass}>Privacy</h2>
+          <label className="mt-3 flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              name="anonymous"
+              defaultChecked={standup?.anonymous ?? false}
+              className="checkbox checkbox-sm checkbox-primary"
+            />
+            Anonymous responses (hides who wrote what, in Slack and on this dashboard)
+          </label>
+        </div>
+      </section>
+
+      <div className="flex gap-3 pt-2">
+        <button type="submit" className="btn btn-primary">
           {submitLabel}
         </button>
         {secondaryAction && (
-          <button
-            type="submit"
-            formAction={secondaryAction}
-            className="rounded border px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-          >
+          <button type="submit" formAction={secondaryAction} className="btn btn-outline">
             {secondaryLabel}
           </button>
         )}

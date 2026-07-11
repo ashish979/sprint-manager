@@ -4,12 +4,9 @@ import { useState } from "react";
 
 import type { QuestionConfig } from "@/lib/types";
 
-const rowInputClass =
-  "mt-1 w-full rounded border px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
-const removeButtonClass =
-  "mt-1 rounded border px-2 text-sm text-zinc-500 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800";
-const addButtonClass =
-  "rounded border px-3 py-1 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800";
+const rowInputClass = "input input-sm w-full";
+const removeButtonClass = "btn btn-ghost btn-sm btn-square";
+const addButtonClass = "btn btn-outline btn-sm";
 
 /**
  * One input per question, with add/remove and a "Required" checkbox —
@@ -50,16 +47,21 @@ export function QuestionsEditor({
   return (
     <div className="mt-1 space-y-2">
       {questions.map((q, i) => (
-        <div key={i} className="flex items-start gap-2">
-          <span className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">{i + 1}.</span>
+        <div key={i} className="flex items-center gap-2">
+          <span className="text-xs text-base-content/40">{i + 1}.</span>
           <input
             value={q.text}
             onChange={(e) => update(i, e.target.value)}
             placeholder="Type a question…"
             className={rowInputClass}
           />
-          <label className="mt-2.5 flex shrink-0 items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-            <input type="checkbox" checked={q.required} onChange={() => toggleRequired(i)} />
+          <label className="flex shrink-0 items-center gap-1.5 text-xs text-base-content/60">
+            <input
+              type="checkbox"
+              checked={q.required}
+              onChange={() => toggleRequired(i)}
+              className="checkbox checkbox-xs checkbox-primary"
+            />
             Required
           </label>
           <button

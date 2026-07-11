@@ -14,12 +14,12 @@ export default async function NewRotationPage() {
   const users = await listUserOptions();
 
   return (
-    <main className="mx-auto max-w-2xl p-8">
-      <Link href="/rotations" className="text-sm text-zinc-500 underline dark:text-zinc-400">
+    <main className="mx-auto max-w-2xl p-6">
+      <Link href="/rotations" className="link link-hover text-sm text-base-content/60">
         ← All rotations
       </Link>
 
-      <h1 className="mt-2 text-2xl font-bold">New rotation</h1>
+      <h1 className="mt-3 text-2xl font-bold">New rotation</h1>
 
       <RotationForm action={createRotationAction} submitLabel="Create rotation" users={users} />
     </main>

@@ -12,10 +12,10 @@ export default async function RotationsPage() {
   const session = await getSession();
   if (!session?.user) {
     return (
-      <main className="mx-auto max-w-3xl p-8">
+      <main className="mx-auto max-w-3xl p-6">
         <h1 className="text-2xl font-bold">Rotations</h1>
-        <p className="mt-4 text-zinc-500 dark:text-zinc-400">
-          <Link href="/" className="underline">
+        <p className="mt-4 text-base-content/60">
+          <Link href="/" className="link link-primary">
             Sign in with Slack
           </Link>{" "}
           to view rotations.
@@ -31,42 +31,46 @@ export default async function RotationsPage() {
   );
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
+    <main className="mx-auto max-w-3xl p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Rotations</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Rotations</h1>
+          <p className="text-sm text-base-content/50">On-call &amp; duty schedules.</p>
+        </div>
         {admin && (
-          <Link
-            href="/rotations/new"
-            className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:opacity-80 dark:bg-white dark:text-black dark:hover:opacity-90"
-          >
-            New rotation
+          <Link href="/rotations/new" className="btn btn-primary btn-sm">
+            + New rotation
           </Link>
         )}
       </div>
 
       {rotations.length === 0 ? (
-        <p className="mt-8 text-zinc-500 dark:text-zinc-400">
+        <div className="mt-8 rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center text-base-content/60">
           No rotations yet{admin ? " — create the first one." : "."}
-        </p>
+        </div>
       ) : (
-        <ul className="mt-6 divide-y rounded border dark:divide-zinc-800 dark:border-zinc-800">
+        <ul className="mt-6 space-y-3">
           {rotations.map((r, i) => (
             <li key={r.id}>
               <Link
                 href={`/rotations/${r.id}`}
-                className="flex items-baseline justify-between gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                className="card border border-base-300 bg-base-100 shadow-sm transition-shadow hover:shadow-md"
               >
-                <div className="min-w-0 flex-1 truncate">
-                  <span className="font-medium">{r.name}</span>
-                  <span className="ml-3 text-sm text-zinc-500 dark:text-zinc-400">
-                    {r.cadence} · {r.members.length} member{r.members.length === 1 ? "" : "s"}
-                  </span>
+                <div className="card-body flex-row items-center justify-between gap-4 p-5">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-semibold">{r.name}</div>
+                    <div className="mt-1 text-sm text-base-content/60">
+                      {r.cadence} · {r.members.length} member{r.members.length === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  {onDuty[i] ? (
+                    <span className="badge badge-primary badge-outline shrink-0">
+                      On duty: {profiles[i]?.name ?? onDuty[i]!.assignee}
+                    </span>
+                  ) : (
+                    <span className="badge badge-ghost shrink-0">not rotated yet</span>
+                  )}
                 </div>
-                <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
-                  {onDuty[i]
-                    ? `on duty: ${profiles[i]?.name ?? onDuty[i]!.assignee}`
-                    : "not rotated yet"}
-                </span>
               </Link>
             </li>
           ))}

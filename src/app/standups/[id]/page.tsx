@@ -17,42 +17,19 @@ import { deleteStandupAction, sendReminderAction, startNowAction } from "../acti
 export const dynamic = "force-dynamic";
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const chipClass =
-  "rounded bg-zinc-100 px-2 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300";
 
-const STATUS_BADGE: Record<ReportStatus, { label: string; class: string }> = {
-  submitted: {
-    label: "✅ submitted",
-    class: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-  },
-  pending: {
-    label: "⏳ pending",
-    class: "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300",
-  },
-  skipped: {
-    label: "🏖 skipped",
-    class: "bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300",
-  },
-  missed: {
-    label: "❌ missed",
-    class: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-  },
-  ooo: {
-    label: "🌴 out of office",
-    class: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  },
+const STATUS_BADGE: Record<ReportStatus, { label: string; className: string }> = {
+  submitted: { label: "✅ submitted", className: "badge-success" },
+  pending: { label: "⏳ pending", className: "badge-warning" },
+  skipped: { label: "🏖 skipped", className: "badge-ghost" },
+  missed: { label: "❌ missed", className: "badge-error" },
+  ooo: { label: "🌴 out of office", className: "badge-info" },
 };
 
 const DAY_STATUS_BADGE = {
-  closed: { label: "Closed", class: "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300" },
-  open: {
-    label: "In progress",
-    class: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400",
-  },
-  notStarted: {
-    label: "Not started",
-    class: "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500",
-  },
+  closed: { label: "Closed", className: "badge-ghost" },
+  open: { label: "In progress", className: "badge-success" },
+  notStarted: { label: "Not started", className: "badge-ghost" },
 } as const;
 
 export default async function StandupDetailPage({
@@ -93,39 +70,32 @@ export default async function StandupDetailPage({
   const todayDay = date === today ? day : await getDay(standup.id, today);
 
   return (
-    <main className="mx-auto max-w-3xl p-8">
-      <Link href="/standups" className="text-sm text-zinc-500 underline dark:text-zinc-400">
+    <main className="mx-auto max-w-3xl p-6">
+      <Link href="/standups" className="link link-hover text-sm text-base-content/60">
         ← All standups
       </Link>
 
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{standup.name}</h1>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${dayStatus.class}`}>
-            {dayStatus.label}
-          </span>
+          <span className={`badge badge-sm ${dayStatus.className}`}>{dayStatus.label}</span>
         </div>
         {admin && (
           <div className="flex gap-2">
-            <Link
-              href={`/standups/${standup.id}/edit`}
-              className="rounded border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            >
+            <Link href={`/standups/${standup.id}/edit`} className="btn btn-outline btn-sm">
               Edit
             </Link>
             {!todayDay && (
               <form action={startNowAction}>
                 <input type="hidden" name="id" value={standup.id} />
-                <button className="rounded border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
-                  Start now
-                </button>
+                <button className="btn btn-primary btn-sm">Start now</button>
               </form>
             )}
             <form action={deleteStandupAction}>
               <input type="hidden" name="id" value={standup.id} />
               <ConfirmSubmitButton
                 confirmText={`Delete "${standup.name}"? This can't be undone.`}
-                className="rounded border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+                className="btn btn-outline btn-error btn-sm"
               >
                 Delete
               </ConfirmSubmitButton>
@@ -134,16 +104,16 @@ export default async function StandupDetailPage({
         )}
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <span className={chipClass}>🕐 {formatTime12h(standup.time)} local</span>
-        <span className={chipClass}>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="badge badge-ghost badge-lg">🕐 {formatTime12h(standup.time)} local</span>
+        <span className="badge badge-ghost badge-lg">
           📆 {standup.weekdays.map((d) => WEEKDAY_LABELS[d]).join(" ")}
         </span>
-        <span className={chipClass}>
+        <span className="badge badge-ghost badge-lg">
           🔔 every {standup.remindAfterMinutes}m, up to {standup.maxReminders}×
         </span>
-        <span className={chipClass}>🔒 closes {standup.closeAtTime}</span>
-        <span className={chipClass}>#{channelInfo?.name ?? standup.channel}</span>
+        <span className="badge badge-ghost badge-lg">🔒 closes {standup.closeAtTime}</span>
+        <span className="badge badge-ghost badge-lg">#{channelInfo?.name ?? standup.channel}</span>
       </div>
 
       <form method="get" className="mt-6 flex items-center gap-2">
@@ -155,41 +125,41 @@ export default async function StandupDetailPage({
           type="date"
           name="date"
           defaultValue={date}
-          className="rounded border px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+          className="input input-sm input-bordered"
         />
-        <button className="rounded border px-3 py-1 text-sm hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
-          Go
-        </button>
+        <button className="btn btn-sm btn-neutral">Go</button>
       </form>
 
-      <ul className="mt-4 space-y-4">
+      <ul className="mt-4 space-y-3">
         {standup.participants.map((userId) => {
           const report = reportOf(userId);
           const status: ReportStatus = report?.status ?? "pending";
           const badge = STATUS_BADGE[status];
           return (
-            <li key={userId} className="rounded border p-4 dark:border-zinc-800">
-              <div className="flex items-center justify-between">
-                <span className="font-medium">{nameOf(userId)}</span>
-                <span className={`rounded px-2 py-0.5 text-xs ${badge.class}`}>
-                  {report ? badge.label : "— not prompted"}
-                </span>
+            <li key={userId} className="card border border-base-300 bg-base-100 shadow-sm">
+              <div className="card-body gap-0 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{nameOf(userId)}</span>
+                  <span className={`badge badge-sm ${report ? badge.className : "badge-ghost"}`}>
+                    {report ? badge.label : "— not prompted"}
+                  </span>
+                </div>
+
+                {report?.status === "submitted" && !standup.anonymous && (
+                  <AnswerList standup={standup} report={report} blockerIdx={blockerIdx} />
+                )}
+
+                {admin && report?.status === "pending" && (
+                  <form action={sendReminderAction} className="mt-3">
+                    <input type="hidden" name="standupId" value={standup.id} />
+                    <input type="hidden" name="date" value={date} />
+                    <input type="hidden" name="userId" value={userId} />
+                    <button className="btn btn-ghost btn-xs">
+                      Remind ({report.remindersSent} sent)
+                    </button>
+                  </form>
+                )}
               </div>
-
-              {report?.status === "submitted" && !standup.anonymous && (
-                <AnswerList standup={standup} report={report} blockerIdx={blockerIdx} />
-              )}
-
-              {admin && report?.status === "pending" && (
-                <form action={sendReminderAction} className="mt-2">
-                  <input type="hidden" name="standupId" value={standup.id} />
-                  <input type="hidden" name="date" value={date} />
-                  <input type="hidden" name="userId" value={userId} />
-                  <button className="rounded border px-2 py-1 text-xs hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800">
-                    Remind ({report.remindersSent} sent)
-                  </button>
-                </form>
-              )}
             </li>
           );
         })}
@@ -197,19 +167,17 @@ export default async function StandupDetailPage({
 
       {standup.anonymous && (
         <section className="mt-6">
-          <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-            Responses (anonymous)
-          </h2>
-          <ul className="mt-2 space-y-4">
+          <h2 className="text-sm font-semibold text-base-content/60">Responses (anonymous)</h2>
+          <ul className="mt-2 space-y-3">
             {reports
               .filter((r) => r.status === "submitted")
               .sort((a, b) => (a.submittedAt ?? "").localeCompare(b.submittedAt ?? ""))
               .map((report, i) => (
-                <li key={report.userId} className="rounded border p-4 dark:border-zinc-800">
-                  <div className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                    Response {i + 1}
+                <li key={report.userId} className="card border border-base-300 bg-base-100 shadow-sm">
+                  <div className="card-body gap-0 p-4">
+                    <div className="text-sm font-medium text-base-content/60">Response {i + 1}</div>
+                    <AnswerList standup={standup} report={report} blockerIdx={blockerIdx} />
                   </div>
-                  <AnswerList standup={standup} report={report} blockerIdx={blockerIdx} />
                 </li>
               ))}
           </ul>
@@ -236,12 +204,10 @@ function AnswerList({
         const blocker = i === blockerIdx && isBlockerAnswer(answer);
         return (
           <div key={i}>
-            <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">{question.text}</dt>
+            <dt className="text-xs font-medium text-base-content/50">{question.text}</dt>
             <dd
               className={`mt-0.5 whitespace-pre-wrap text-sm ${
-                blocker
-                  ? "rounded bg-red-50 p-2 font-medium text-red-800 dark:bg-red-950 dark:text-red-300"
-                  : ""
+                blocker ? "rounded-field bg-error/10 p-2 font-medium text-error" : ""
               }`}
             >
               {blocker && "🚫 "}

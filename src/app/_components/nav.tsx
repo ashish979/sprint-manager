@@ -10,27 +10,29 @@ export async function Nav() {
   if (!session?.user) return null;
 
   return (
-    <nav className="flex items-center justify-between border-b border-zinc-200 px-6 py-3 dark:border-zinc-800">
-      <Link href="/" className="flex items-center gap-2 text-sm font-semibold">
-        <Image
-          src="/logo.png"
-          alt=""
-          width={24}
-          height={24}
-          unoptimized
-          className="h-6 w-6 rounded-md object-cover"
-        />
-        Sprint Manager
-      </Link>
-      <div className="flex items-center gap-5 text-sm text-zinc-600 dark:text-zinc-400">
-        <Link href="/standups" className="hover:text-black dark:hover:text-white">
+    <header className="navbar sticky top-0 z-20 border-b border-base-300 bg-base-100/90 px-4 backdrop-blur sm:px-6">
+      <div className="navbar-start">
+        <Link href="/" className="flex items-center gap-2 text-base font-semibold">
+          <Image
+            src="/logo.png"
+            alt=""
+            width={26}
+            height={26}
+            unoptimized
+            className="h-6 w-6 rounded-md object-cover"
+          />
+          Sprint Manager
+        </Link>
+      </div>
+      <nav className="navbar-end gap-1 text-sm font-medium">
+        <Link href="/standups" className="btn btn-ghost btn-sm">
           Standups
         </Link>
-        <Link href="/rotations" className="hover:text-black dark:hover:text-white">
+        <Link href="/rotations" className="btn btn-ghost btn-sm">
           Rotations
         </Link>
-        <Link href="/preferences" className="hover:text-black dark:hover:text-white">
-          My preferences
+        <Link href="/preferences" className="btn btn-ghost btn-sm">
+          Preferences
         </Link>
         {!session.isDev && (
           <form
@@ -39,10 +41,10 @@ export async function Nav() {
               await signOut();
             }}
           >
-            <button className="hover:text-black dark:hover:text-white">Sign out</button>
+            <button className="btn btn-ghost btn-sm text-base-content/60">Sign out</button>
           </form>
         )}
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }

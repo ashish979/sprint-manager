@@ -1,89 +1,43 @@
 @import "tailwindcss";
+@plugin "daisyui";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Single light theme — Geekbot-style: soft gray page, white cards, a friendly
+   violet primary. Light only (the app is a daytime admin dashboard). */
+@plugin "daisyui/theme" {
+  name: "sprint";
+  default: true;
+  prefersdark: false;
   color-scheme: light;
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark gray (zinc-900), not near-black — matches the zinc-800 card/border
-       scale used across pages via Tailwind's dark: classes. */
-    --background: #18181b;
-    --foreground: #f4f4f5;
-    color-scheme: dark;
-  }
-}
+  --color-base-100: #ffffff;
+  --color-base-200: #f5f6f8;
+  --color-base-300: #e7e9ee;
+  --color-base-content: #1d2333;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: #5b4ef0;
+  --color-primary-content: #ffffff;
+  --color-secondary: #10b6a4;
+  --color-secondary-content: #ffffff;
+  --color-accent: #f59e0b;
+  --color-accent-content: #ffffff;
+  --color-neutral: #2b3142;
+  --color-neutral-content: #ffffff;
+
+  --color-info: #2563eb;
+  --color-info-content: #ffffff;
+  --color-success: #16a34a;
+  --color-success-content: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-content: #ffffff;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --border: 1px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* Tailwind's preflight leaves <button> at the browser default (non-pointer)
-   cursor — links get "pointer" natively, buttons don't unless told to. */
-button:not(:disabled),
-[role="button"]:not(:disabled) {
-  cursor: pointer;
-}
-
-/* Background glow animations (homepage hero + the top-of-page wash on every
-   other page). Static transform/opacity here is the fallback for
-   prefers-reduced-motion; the @media block below is what actually animates. */
-.glow-drift {
-  transform: translate(-50%, -50%);
-  opacity: 1;
-}
-
-.glow-pulse {
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  @keyframes glow-drift {
-    0%,
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 0.75;
-    }
-    25% {
-      transform: translate(-28%, -62%) scale(1.3);
-      opacity: 1;
-    }
-    50% {
-      transform: translate(-68%, -35%) scale(0.75);
-      opacity: 0.5;
-    }
-    75% {
-      transform: translate(-42%, -68%) scale(1.2);
-      opacity: 1;
-    }
-  }
-
-  .glow-drift {
-    animation: glow-drift 9s ease-in-out infinite;
-  }
-
-  @keyframes glow-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.2;
-    }
-  }
-
-  .glow-pulse {
-    animation: glow-pulse 5s ease-in-out infinite;
-  }
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
