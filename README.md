@@ -1,4 +1,4 @@
-# Sprint Manager
+# Josys Sprint Manager
 
 In-house async daily standups (Geekbot-style) and duty rotations (Rotation.app-style) for our org. Slack-first, with a web dashboard for admins.
 
