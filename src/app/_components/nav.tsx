@@ -1,8 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { signOut } from "@/auth";
 import { getSession } from "@/lib/session";
+
+import { Logo } from "./logo";
 
 /** Persistent top nav — every signed-in page links to every other page. */
 export async function Nav() {
@@ -13,15 +14,8 @@ export async function Nav() {
     <header className="navbar sticky top-0 z-20 border-b border-base-300 bg-base-100/90 px-4 backdrop-blur sm:px-6">
       <div className="navbar-start">
         <Link href="/" className="flex items-center gap-2 text-base font-semibold">
-          <Image
-            src="/logo.png"
-            alt=""
-            width={26}
-            height={26}
-            unoptimized
-            className="h-6 w-6 rounded-md object-cover"
-          />
-          Sprint Manager
+          <Logo className="h-6 w-6 rounded-lg" />
+          Josys Sprint Manager
         </Link>
       </div>
       <nav className="navbar-end gap-1 text-sm font-medium">

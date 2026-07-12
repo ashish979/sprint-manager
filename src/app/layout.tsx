@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sprint Manager",
+  title: "Josys Sprint Manager",
   description: "Standups and duty rotations for your team, right inside Slack.",
 };
 

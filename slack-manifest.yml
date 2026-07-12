@@ -4,7 +4,7 @@
 # Replace <BASE_URL> with the stage's CloudFront URL before pasting
 # (e.g. https://dxxxxxxxxxxxx.cloudfront.net).
 display_information:
-  name: Sprint Manager
+  name: Josys Sprint Manager
   description: Async standups & duty rotations, in-house.
   background_color: "#4A154B"
 features:
