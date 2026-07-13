@@ -1,3 +1,4 @@
+import { TimeField } from "@/app/_components/date-time-fields";
 import { ParticipantPicker } from "@/app/_components/participant-picker";
 import { SubmitButton } from "@/app/_components/submit-button";
 import type { UserOption } from "@/lib/slack/directory";
@@ -130,10 +131,8 @@ export function RotationForm({
         </label>
         <label className="text-sm font-medium">
           Announce time (IST)
-          <input
-            type="time"
+          <TimeField
             name="announceTime"
-            step={900}
             defaultValue={rotation?.announceTime ?? ROTATION_DEFAULTS.announceTime}
             className={inputClass}
           />

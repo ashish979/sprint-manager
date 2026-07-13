@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
+import { DateField } from "@/app/_components/date-time-fields";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
@@ -139,13 +140,7 @@ export default async function StandupDetailPage({
         <label className="text-sm font-medium" htmlFor="date">
           Reports for
         </label>
-        <input
-          id="date"
-          type="date"
-          name="date"
-          defaultValue={date}
-          className="input input-sm input-bordered"
-        />
+        <DateField name="date" defaultValue={date} className="input input-sm" />
         <button className="btn btn-sm btn-neutral">Go</button>
       </form>
 
