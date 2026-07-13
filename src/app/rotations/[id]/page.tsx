@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
 import { ParticipantPicker } from "@/app/_components/participant-picker";
+import { SubmitButton } from "@/app/_components/submit-button";
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { listUserOptions } from "@/lib/slack/directory";
@@ -66,7 +67,9 @@ export default async function RotationDetailPage({
             </Link>
             <form action={rotateNowAction}>
               <input type="hidden" name="id" value={rotation.id} />
-              <button className="btn btn-primary btn-sm">Rotate now</button>
+              <SubmitButton className="btn btn-primary btn-sm" pendingText="Rotating…">
+                Rotate now
+              </SubmitButton>
             </form>
             <form action={deleteRotationAction}>
               <input type="hidden" name="id" value={rotation.id} />
@@ -154,7 +157,9 @@ export default async function RotationDetailPage({
                   <input name="assignee" required placeholder="U0123ABC" className={smallInputClass} />
                 )}
               </label>
-              <button className="btn btn-primary btn-sm">Queue</button>
+              <SubmitButton className="btn btn-primary btn-sm" pendingText="Queuing…">
+                Queue
+              </SubmitButton>
             </form>
           </div>
         </div>

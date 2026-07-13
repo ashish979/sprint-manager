@@ -4,6 +4,7 @@ import { signIn, signOut } from "@/auth";
 import { getSession } from "@/lib/session";
 
 import { Logo } from "./_components/logo";
+import { SubmitButton } from "./_components/submit-button";
 
 // Session-dependent; never prerender (also keeps builds env-free).
 export const dynamic = "force-dynamic";
@@ -47,7 +48,9 @@ export default async function Home() {
                   await signOut();
                 }}
               >
-                <button className="link link-hover text-sm text-base-content/50">Sign out</button>
+                <SubmitButton className="link link-hover text-sm text-base-content/50">
+                  Sign out
+                </SubmitButton>
               </form>
             )}
           </div>
@@ -59,7 +62,9 @@ export default async function Home() {
             await signIn("slack");
           }}
         >
-          <button className="btn btn-primary">Sign in with Slack</button>
+          <SubmitButton className="btn btn-primary" pendingText="Redirecting…">
+            Sign in with Slack
+          </SubmitButton>
         </form>
       )}
     </main>

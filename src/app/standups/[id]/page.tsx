@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
+import { SubmitButton } from "@/app/_components/submit-button";
 import { isAdminSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
@@ -97,14 +98,16 @@ export default async function StandupDetailPage({
             <form action={setStandupPausedAction}>
               <input type="hidden" name="id" value={standup.id} />
               <input type="hidden" name="paused" value={standup.paused ? "false" : "true"} />
-              <button className="btn btn-outline btn-sm">
+              <SubmitButton className="btn btn-outline btn-sm">
                 {standup.paused ? "Resume" : "Pause"}
-              </button>
+              </SubmitButton>
             </form>
             {!todayDay && !standup.paused && (
               <form action={startNowAction}>
                 <input type="hidden" name="id" value={standup.id} />
-                <button className="btn btn-primary btn-sm">Start now</button>
+                <SubmitButton className="btn btn-primary btn-sm" pendingText="Starting…">
+                  Start now
+                </SubmitButton>
               </form>
             )}
             <form action={deleteStandupAction}>
@@ -170,9 +173,9 @@ export default async function StandupDetailPage({
                     <input type="hidden" name="standupId" value={standup.id} />
                     <input type="hidden" name="date" value={date} />
                     <input type="hidden" name="userId" value={userId} />
-                    <button className="btn btn-ghost btn-xs">
+                    <SubmitButton className="btn btn-ghost btn-xs" pendingText="Sending…">
                       Remind ({report.remindersSent} sent)
-                    </button>
+                    </SubmitButton>
                   </form>
                 )}
               </div>

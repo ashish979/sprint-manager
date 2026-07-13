@@ -1,4 +1,5 @@
 import { ParticipantPicker } from "@/app/_components/participant-picker";
+import { SubmitButton } from "@/app/_components/submit-button";
 import type { UserOption } from "@/lib/slack/directory";
 import { ROTATION_DEFAULTS, type RotationConfig } from "@/lib/types";
 
@@ -168,9 +169,9 @@ export function RotationForm({
           />
         </label>
 
-        <button type="submit" className="btn btn-primary mt-6 w-fit">
+        <SubmitButton className="btn btn-primary mt-6 w-fit" pendingText="Saving…">
           {submitLabel}
-        </button>
+        </SubmitButton>
       </div>
     </form>
   );
