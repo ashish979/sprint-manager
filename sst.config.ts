@@ -26,6 +26,12 @@ export default $config({
   async run() {
     // Single-table design (PLAN.md §2.2). GSI1 serves the "what's due now"
     // query: gsi1pk = DUE#<yyyy-mm-dd-hh-mm>.
+    //
+    // On-demand billing (SST's default): we run in a shared org account where
+    // the DynamoDB always-free provisioned tier is already consumed org-wide,
+    // so 24/7 provisioned capacity was billed for full. Our request volume is
+    // tiny (a few thousand ops/week), so pay-per-request costs a fraction of a
+    // cent vs. ~$6/mo for provisioned 5/5 (+5/5 GSI).
     const table = new sst.aws.Dynamo("Table", {
       fields: {
         pk: "string",
@@ -36,25 +42,6 @@ export default $config({
       primaryIndex: { hashKey: "pk", rangeKey: "sk" },
       globalIndexes: {
         GSI1: { hashKey: "gsi1pk", rangeKey: "gsi1sk" },
-      },
-      transform: {
-        table: (args) => {
-          // Provisioned 5/5 (+5/5 on the GSI) stays inside the always-free
-          // 25 RCU/25 WCU; the default on-demand mode is billed per request.
-          args.billingMode = "PROVISIONED";
-          args.readCapacity = 5;
-          args.writeCapacity = 5;
-          args.globalSecondaryIndexes = [
-            {
-              name: "GSI1",
-              hashKey: "gsi1pk",
-              rangeKey: "gsi1sk",
-              projectionType: "ALL",
-              readCapacity: 5,
-              writeCapacity: 5,
-            },
-          ];
-        },
       },
     });
 
