@@ -48,6 +48,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export async function sweep(now: Date = new Date()): Promise<void> {
   const standups = await listStandups();
   for (const standup of standups) {
+    if (standup.paused) continue; // paused: no prompts/reminders/closes; history kept
     for (const userId of standup.participants) {
       try {
         await sweepParticipant(standup, userId, now);

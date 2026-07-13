@@ -158,6 +158,19 @@ export async function updateStandupAction(formData: FormData): Promise<void> {
   redirect(`/standups/${id}`);
 }
 
+/** Pause/resume: paused standups are skipped by the scheduler but keep all history. */
+export async function setStandupPausedAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const paused = formData.get("paused") === "true";
+  if (!id) throw new Error("missing id");
+  const existing = await getStandup(id);
+  if (!existing) throw new Error(`standup ${id} not found`);
+  await putStandup({ ...existing, paused, updatedAt: new Date().toISOString() });
+  revalidatePath(`/standups/${id}`);
+  revalidatePath("/standups");
+}
+
 export async function deleteStandupAction(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");

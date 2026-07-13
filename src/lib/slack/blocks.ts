@@ -330,6 +330,13 @@ export function replyMessage(
 
 // --- Rotation announce + on-duty DM ---
 
+/** A "*Notes:*\n…" section, or nothing when the rotation has no notes. */
+function notesBlocks(rotation: Pick<RotationConfig, "notes">): unknown[] {
+  const notes = rotation.notes?.trim();
+  if (!notes) return [];
+  return [{ type: "section", text: { type: "mrkdwn", text: `*Notes:*\n${notes.slice(0, 2900)}` } }];
+}
+
 export function shiftAnnounceMessage(
   rotation: RotationConfig,
   assignee: string,
@@ -345,6 +352,7 @@ export function shiftAnnounceMessage(
           text: `🔄 *${rotation.name}*\n${mention(assignee)} is on duty starting ${friendlyDate(date)}.`,
         },
       },
+      ...notesBlocks(rotation),
       {
         type: "context",
         elements: [
@@ -374,6 +382,7 @@ export function onDutyDmMessage(
           text: `📟 You're on duty for *${rotation.name}* starting ${friendlyDate(date)}. Thanks!`,
         },
       },
+      ...notesBlocks(rotation),
     ],
   };
 }

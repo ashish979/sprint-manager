@@ -59,3 +59,26 @@ describe("isShiftDue", () => {
     expect(isShiftDue("weekly", at("2026-07-20", "00:00"), "09:30", "2026-07-08")).toBe(true);
   });
 });
+
+describe("activeDays (skip weekends etc.)", () => {
+  const WEEKDAYS_ONLY = [1, 2, 3, 4, 5];
+
+  it("rolls a cadence date on a non-active day forward to the next active day", () => {
+    // Fri 2026-07-10 → daily lands Sat 07-11 → rolls to Mon 07-13.
+    expect(nextShiftDate("daily", "2026-07-10", WEEKDAYS_ONLY)).toBe("2026-07-13");
+  });
+
+  it("a brand-new rotation is not due on a non-active day", () => {
+    // Sat 2026-07-11.
+    expect(isShiftDue("daily", at("2026-07-11", "10:00"), "09:30", undefined, WEEKDAYS_ONLY)).toBe(
+      false,
+    );
+  });
+
+  it("a brand-new rotation is due on an active day at announceTime", () => {
+    // Mon 2026-07-13.
+    expect(isShiftDue("daily", at("2026-07-13", "09:30"), "09:30", undefined, WEEKDAYS_ONLY)).toBe(
+      true,
+    );
+  });
+});

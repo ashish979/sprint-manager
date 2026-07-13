@@ -32,6 +32,19 @@ function parseMembers(formData: FormData): string[] {
   return [...new Set([...typed, ...picked])];
 }
 
+/** Active-day checkboxes (0–6). None or all 7 selected ⇒ undefined (= every day). */
+function parseActiveDays(formData: FormData): number[] | undefined {
+  const days = [
+    ...new Set(
+      formData
+        .getAll("activeDays")
+        .map(Number)
+        .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6),
+    ),
+  ].sort((a, b) => a - b);
+  return days.length === 0 || days.length === 7 ? undefined : days;
+}
+
 export async function createRotationAction(formData: FormData): Promise<void> {
   await requireAdmin();
 
@@ -60,6 +73,8 @@ export async function createRotationAction(formData: FormData): Promise<void> {
     channel,
     members,
     cadence,
+    activeDays: parseActiveDays(formData),
+    notes: String(formData.get("notes") ?? "").trim() || undefined,
     usergroupId: usergroupId || undefined,
     announceTime,
     cursor: 0,
@@ -114,6 +129,8 @@ export async function updateRotationAction(formData: FormData): Promise<void> {
     channel,
     members,
     cadence,
+    activeDays: parseActiveDays(formData),
+    notes: String(formData.get("notes") ?? "").trim() || undefined,
     usergroupId: usergroupId || undefined,
     announceTime,
     // Members can shrink/reorder — clamp so cursor still points at a valid index.

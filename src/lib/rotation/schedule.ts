@@ -30,23 +30,41 @@ function isWeekday(date: string): boolean {
   return weekday >= 1 && weekday <= 5;
 }
 
-/** The date the next shift after `from` should start, per cadence. */
-export function nextShiftDate(cadence: Cadence, from: string): string {
+/** True if `date`'s weekday is in `activeDays` (empty/undefined = every day). */
+export function isActiveDay(date: string, activeDays?: number[]): boolean {
+  if (!activeDays || activeDays.length === 0) return true;
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return activeDays.includes(weekday);
+}
+
+/**
+ * The date the next shift after `from` should start, per cadence. If
+ * `activeDays` is set, a computed date on a non-active day rolls forward to
+ * the next active day (so e.g. a daily rotation can skip weekends).
+ */
+export function nextShiftDate(cadence: Cadence, from: string, activeDays?: number[]): string {
+  let next: string;
   switch (cadence) {
     case "daily":
-      return addDays(from, 1);
+      next = addDays(from, 1);
+      break;
     case "weekdays": {
-      let next = addDays(from, 1);
+      next = addDays(from, 1);
       while (!isWeekday(next)) next = addDays(next, 1);
-      return next;
+      break;
     }
     case "weekly":
-      return addDays(from, 7);
+      next = addDays(from, 7);
+      break;
     case "biweekly":
-      return addDays(from, 14);
+      next = addDays(from, 14);
+      break;
     case "monthly":
-      return addMonths(from, 1);
+      next = addMonths(from, 1);
+      break;
   }
+  while (!isActiveDay(next, activeDays)) next = addDays(next, 1);
+  return next;
 }
 
 /**
@@ -61,11 +79,15 @@ export function isShiftDue(
   local: { date: string; minutes: number },
   announceTime: string,
   lastStartDate?: string,
+  activeDays?: number[],
 ): boolean {
   const announceMinutes = timeToMinutes(announceTime);
-  if (!lastStartDate) return local.minutes >= announceMinutes;
+  // First shift ever: start on the first active day at/after announceTime.
+  if (!lastStartDate) {
+    return isActiveDay(local.date, activeDays) && local.minutes >= announceMinutes;
+  }
 
-  const dueDate = nextShiftDate(cadence, lastStartDate);
+  const dueDate = nextShiftDate(cadence, lastStartDate, activeDays);
   if (local.date < dueDate) return false;
   if (local.date === dueDate) return local.minutes >= announceMinutes;
   return true; // overdue — a delayed tick catches up any time of day
