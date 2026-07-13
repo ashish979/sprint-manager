@@ -29,6 +29,11 @@ export async function Nav() {
         <Link href="/preferences" className="btn btn-ghost btn-sm">
           Preferences
         </Link>
+        {session.isAdmin && (
+          <Link href="/admin" className="btn btn-ghost btn-sm">
+            Admin
+          </Link>
+        )}
         {!session.isDev && (
           <form
             action={async () => {

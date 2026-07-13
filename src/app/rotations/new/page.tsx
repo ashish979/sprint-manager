@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { isAdminSession } from "@/lib/authz";
+import { isEditorSession } from "@/lib/authz";
 import { listUserOptions } from "@/lib/slack/directory";
 
 import { createRotationAction } from "../actions";
@@ -10,7 +10,7 @@ import { RotationForm } from "../_components/rotation-form";
 export const dynamic = "force-dynamic";
 
 export default async function NewRotationPage() {
-  if (!(await isAdminSession())) redirect("/rotations");
+  if (!(await isEditorSession())) redirect("/rotations");
   const users = await listUserOptions();
 
   return (

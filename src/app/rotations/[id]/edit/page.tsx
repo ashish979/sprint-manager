@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { isAdminSession } from "@/lib/authz";
+import { canManage } from "@/lib/authz";
+import { getSession } from "@/lib/session";
 import { listUserOptions } from "@/lib/slack/directory";
 import { getRotation } from "@/lib/store/rotations";
 
@@ -15,11 +16,13 @@ export default async function EditRotationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  if (!(await isAdminSession())) redirect("/rotations");
+  const session = await getSession();
+  if (!session?.user) redirect("/rotations");
 
   const { id } = await params;
   const rotation = await getRotation(id);
   if (!rotation) notFound();
+  if (!canManage(session, rotation.ownerId)) redirect(`/rotations/${id}`);
   const users = await listUserOptions();
 
   return (

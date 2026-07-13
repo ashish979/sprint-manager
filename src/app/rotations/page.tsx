@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { isAdminSession } from "@/lib/authz";
+import { isEditorSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { listRotations } from "@/lib/store/rotations";
 import { getLatestShift } from "@/lib/store/shifts";
@@ -24,7 +24,7 @@ export default async function RotationsPage() {
     );
   }
 
-  const [rotations, admin] = await Promise.all([listRotations(), isAdminSession()]);
+  const [rotations, canCreate] = await Promise.all([listRotations(), isEditorSession()]);
   const onDuty = await Promise.all(rotations.map((r) => getLatestShift(r.id)));
   const profiles = await Promise.all(
     onDuty.map((s) => (s ? getUserProfile(s.assignee) : Promise.resolve(undefined))),
@@ -37,7 +37,7 @@ export default async function RotationsPage() {
           <h1 className="text-2xl font-bold">Rotations</h1>
           <p className="text-sm text-base-content/50">On-call &amp; duty schedules.</p>
         </div>
-        {admin && (
+        {canCreate && (
           <Link href="/rotations/new" className="btn btn-primary btn-sm">
             + New rotation
           </Link>
@@ -46,7 +46,7 @@ export default async function RotationsPage() {
 
       {rotations.length === 0 ? (
         <div className="mt-8 rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center text-base-content/60">
-          No rotations yet{admin ? " — create the first one." : "."}
+          No rotations yet{canCreate ? " — create the first one." : "."}
         </div>
       ) : (
         <ul className="mt-6 space-y-3">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { isAdminSession } from "@/lib/authz";
+import { isEditorSession } from "@/lib/authz";
 import { listUserOptions } from "@/lib/slack/directory";
 import { STANDUP_TEMPLATES } from "@/lib/types";
 
@@ -15,7 +15,7 @@ export default async function NewStandupPage({
 }: {
   searchParams: Promise<{ template?: string }>;
 }) {
-  if (!(await isAdminSession())) redirect("/standups");
+  if (!(await isEditorSession())) redirect("/standups");
   const [{ template }, users] = await Promise.all([searchParams, listUserOptions()]);
   // "Daily Standup" is the implicit default template — make that explicit so
   // its pill shows as selected instead of landing with nothing highlighted.

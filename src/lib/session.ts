@@ -16,6 +16,7 @@ export async function getSession(): Promise<Session | null> {
       user: { name: `Dev user (${devUser})` },
       slackUserId: devUser,
       isAdmin: true,
+      isEditor: true,
       isDev: true,
       expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     } as Session;

@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
 import { DateField } from "@/app/_components/date-time-fields";
 import { SubmitButton } from "@/app/_components/submit-button";
-import { isAdminSession } from "@/lib/authz";
+import { canManage } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { blockerQuestionIndex, isBlockerAnswer } from "@/lib/standup/blockers";
 import { ensureChannelInfo } from "@/lib/store/channels";
@@ -56,13 +56,13 @@ export default async function StandupDetailPage({
   const { date: rawDate } = await searchParams;
   const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate ?? "") ? rawDate! : todayIst();
 
-  const [reports, admin, profiles, channelInfo, day] = await Promise.all([
+  const [reports, profiles, channelInfo, day] = await Promise.all([
     listReports(standup.id, date),
-    isAdminSession(),
     Promise.all(standup.participants.map((u) => getUserProfile(u))),
     ensureChannelInfo(standup.channel),
     getDay(standup.id, date),
   ]);
+  const admin = canManage(session, standup.ownerId);
   const nameOf = (userId: string) =>
     profiles.find((p) => p?.userId === userId)?.name ?? userId;
   const reportOf = (userId: string): Report | undefined =>
