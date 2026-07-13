@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
+import { DateField } from "@/app/_components/date-time-fields";
 import { ParticipantPicker } from "@/app/_components/participant-picker";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { isAdminSession } from "@/lib/authz";
@@ -143,7 +144,7 @@ export default async function RotationDetailPage({
               <input type="hidden" name="rotationId" value={rotation.id} />
               <label className="text-sm font-medium">
                 Date
-                <input type="date" name="date" required className={smallInputClass} />
+                <DateField name="date" className={smallInputClass} />
               </label>
               <label className="min-w-48 text-sm font-medium">
                 Assignee

@@ -31,6 +31,8 @@ export default function RootLayout({
       >
         <Nav />
         {children}
+        {/* Body-level target for react-datepicker popups (see date-time-fields). */}
+        <div id="datepicker-portal" />
       </body>
     </html>
   );

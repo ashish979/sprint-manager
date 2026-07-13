@@ -1,3 +1,4 @@
+import { TimeField } from "@/app/_components/date-time-fields";
 import { ParticipantPicker } from "@/app/_components/participant-picker";
 import { SubmitButton } from "@/app/_components/submit-button";
 import type { UserOption } from "@/lib/slack/directory";
@@ -134,10 +135,8 @@ export function StandupForm({
           <div className="mt-4 flex flex-wrap gap-6">
             <label className="text-sm font-medium">
               Time (participant’s local)
-              <input
-                type="time"
+              <TimeField
                 name="time"
-                step={900}
                 defaultValue={standup?.time ?? STANDUP_DEFAULTS.time}
                 className={`${inputClass} mt-1`}
               />
@@ -186,10 +185,8 @@ export function StandupForm({
             </label>
             <label className="text-sm font-medium">
               Close at (local)
-              <input
-                type="time"
+              <TimeField
                 name="closeAtTime"
-                step={900}
                 defaultValue={standup?.closeAtTime ?? STANDUP_DEFAULTS.closeAtTime}
                 className={`${inputClass} mt-1`}
               />

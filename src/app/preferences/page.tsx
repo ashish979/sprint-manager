@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { DateField, TimeField } from "@/app/_components/date-time-fields";
 import { SubmitButton } from "@/app/_components/submit-button";
 import { getSession } from "@/lib/session";
 import { getUserProfile } from "@/lib/store/users";
@@ -50,13 +51,7 @@ export default async function PreferencesPage({
             <span className="block text-xs font-normal text-base-content/50">
               Leave blank to use each standup&apos;s default.
             </span>
-            <input
-              type="time"
-              name="time"
-              step={900}
-              defaultValue={profile?.preferredTime ?? ""}
-              className={inputClass}
-            />
+            <TimeField name="time" defaultValue={profile?.preferredTime ?? ""} className={inputClass} />
           </label>
           <SubmitButton className="btn btn-primary btn-sm mt-3 w-fit" pendingText="Saving…">
             Save
@@ -73,21 +68,11 @@ export default async function PreferencesPage({
           <form action={setOutOfOfficeAction} className="mt-2">
             <label className="block text-sm font-medium">
               From
-              <input
-                type="date"
-                name="from"
-                defaultValue={profile?.outOfOffice?.from ?? ""}
-                className={inputClass}
-              />
+              <DateField name="from" defaultValue={profile?.outOfOffice?.from ?? ""} className={inputClass} />
             </label>
             <label className="mt-2 block text-sm font-medium">
               To
-              <input
-                type="date"
-                name="to"
-                defaultValue={profile?.outOfOffice?.to ?? ""}
-                className={inputClass}
-              />
+              <DateField name="to" defaultValue={profile?.outOfOffice?.to ?? ""} className={inputClass} />
             </label>
             <SubmitButton className="btn btn-primary btn-sm mt-3 w-fit" pendingText="Saving…">
               Set out-of-office
