@@ -12,7 +12,12 @@ import { getUserProfile } from "@/lib/store/users";
 import { formatTime12h, todayIst } from "@/lib/tz";
 import type { QuestionConfig, Report, ReportStatus } from "@/lib/types";
 
-import { deleteStandupAction, sendReminderAction, startNowAction } from "../actions";
+import {
+  deleteStandupAction,
+  sendReminderAction,
+  setStandupPausedAction,
+  startNowAction,
+} from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -78,14 +83,25 @@ export default async function StandupDetailPage({
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">{standup.name}</h1>
-          <span className={`badge badge-sm ${dayStatus.className}`}>{dayStatus.label}</span>
+          {standup.paused ? (
+            <span className="badge badge-sm badge-warning">⏸ Paused</span>
+          ) : (
+            <span className={`badge badge-sm ${dayStatus.className}`}>{dayStatus.label}</span>
+          )}
         </div>
         {admin && (
           <div className="flex gap-2">
             <Link href={`/standups/${standup.id}/edit`} className="btn btn-outline btn-sm">
               Edit
             </Link>
-            {!todayDay && (
+            <form action={setStandupPausedAction}>
+              <input type="hidden" name="id" value={standup.id} />
+              <input type="hidden" name="paused" value={standup.paused ? "false" : "true"} />
+              <button className="btn btn-outline btn-sm">
+                {standup.paused ? "Resume" : "Pause"}
+              </button>
+            </form>
+            {!todayDay && !standup.paused && (
               <form action={startNowAction}>
                 <input type="hidden" name="id" value={standup.id} />
                 <button className="btn btn-primary btn-sm">Start now</button>

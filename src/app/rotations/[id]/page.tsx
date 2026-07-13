@@ -17,6 +17,8 @@ import { deleteRotationAction, queueOverrideAction, rotateNowAction } from "../a
 
 export const dynamic = "force-dynamic";
 
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
 const SOURCE_BADGE: Record<ShiftSource, { label: string; className: string }> = {
   auto: { label: "auto", className: "badge-ghost" },
   override: { label: "override", className: "badge-warning" },
@@ -84,11 +86,25 @@ export default async function RotationDetailPage({
         <span className="badge badge-ghost badge-lg">
           🕐 {formatTime12h(rotation.announceTime ?? ROTATION_DEFAULTS.announceTime)} IST
         </span>
+        {rotation.activeDays && rotation.activeDays.length > 0 && (
+          <span className="badge badge-ghost badge-lg">
+            📆 {[...rotation.activeDays].sort((a, b) => a - b).map((d) => WEEKDAY_LABELS[d]).join(" ")}
+          </span>
+        )}
         <span className="badge badge-ghost badge-lg">#{channelInfo?.name ?? rotation.channel}</span>
         {rotation.usergroupId && (
           <span className="badge badge-ghost badge-lg">👥 {rotation.usergroupId}</span>
         )}
       </div>
+
+      {rotation.notes && (
+        <div className="card mt-4 border border-base-300 bg-base-100 shadow-sm">
+          <div className="card-body py-4">
+            <p className="text-sm font-medium text-base-content/50">Notes</p>
+            <p className="whitespace-pre-wrap text-sm">{rotation.notes}</p>
+          </div>
+        </div>
+      )}
 
       <div className="card mt-6 border border-base-300 bg-base-100 shadow-sm">
         <div className="card-body">

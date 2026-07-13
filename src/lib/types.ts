@@ -30,6 +30,12 @@ export interface StandupConfig {
    * fully identified — only the answer-content-to-identity mapping is hidden.
    */
   anonymous?: boolean;
+  /**
+   * When true the scheduler skips this standup entirely (no prompts, reminders
+   * or closes) but all past days/reports are retained — a reversible
+   * alternative to deleting. Manual "Start now" still works.
+   */
+  paused?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -143,6 +149,17 @@ export interface RotationConfig {
   /** Ordered Slack user ids; round-robin cycles through this list. */
   members: string[];
   cadence: Cadence;
+  /**
+   * Days a shift may start; 0 = Sunday … 6 = Saturday. Omitted/empty = every
+   * day. A cadence date landing on a non-active day rolls forward to the next
+   * active one — lets a rotation skip weekends (activeDays = [1..5]).
+   */
+  activeDays?: number[];
+  /**
+   * Free-text notes shown in the Slack announce and on-duty DM (e.g. the
+   * duties the on-call person owns). Optional.
+   */
+  notes?: string;
   /** Announce channel id (C…). */
   channel: string;
   /** Slack user group id (S…) kept pointed at the on-duty member. */

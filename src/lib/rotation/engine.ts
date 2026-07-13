@@ -41,7 +41,8 @@ async function sweepRotation(rotation: RotationConfig, now: Date): Promise<void>
   const local = localParts(now, "Asia/Kolkata");
   const latest = await getLatestShift(rotation.id);
   const announceTime = rotation.announceTime ?? ROTATION_DEFAULTS.announceTime;
-  if (!isShiftDue(rotation.cadence, local, announceTime, latest?.startDate)) return;
+  if (!isShiftDue(rotation.cadence, local, announceTime, latest?.startDate, rotation.activeDays))
+    return;
   await rotate(rotation, local.date);
 }
 

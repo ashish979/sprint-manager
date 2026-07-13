@@ -12,6 +12,16 @@ const CADENCES = [
   { value: "monthly", label: "Monthly" },
 ];
 
+const WEEKDAYS = [
+  { value: 1, label: "Mon" },
+  { value: 2, label: "Tue" },
+  { value: 3, label: "Wed" },
+  { value: 4, label: "Thu" },
+  { value: 5, label: "Fri" },
+  { value: 6, label: "Sat" },
+  { value: 0, label: "Sun" },
+];
+
 const inputClass = "input w-full mt-1";
 const labelClass = "block text-sm font-medium mt-4";
 
@@ -36,6 +46,10 @@ export function RotationForm({
       label: users?.find((u) => u.id === id)?.name ?? id,
     })) ?? [];
   const membersTextareaDefault = users ? "" : rotation?.members.join(" ");
+
+  // Omitted activeDays = every day, so an unconfigured rotation starts all-checked.
+  const activeDays = rotation?.activeDays;
+  const dayChecked = (d: number) => !activeDays || activeDays.length === 0 || activeDays.includes(d);
 
   return (
     <form action={action} className="card mt-6 border border-base-300 bg-base-100 shadow-sm">
@@ -124,6 +138,35 @@ export function RotationForm({
           />
         </label>
       </div>
+
+        <fieldset className="mt-4 text-sm font-medium">
+          Active days <span className="font-normal text-base-content/50">(uncheck to skip, e.g. weekends)</span>
+          <div className="mt-2 flex flex-wrap gap-3">
+            {WEEKDAYS.map((d) => (
+              <label key={d.value} className="flex items-center gap-1.5 font-normal">
+                <input
+                  type="checkbox"
+                  name="activeDays"
+                  value={d.value}
+                  defaultChecked={dayChecked(d.value)}
+                  className="checkbox checkbox-sm checkbox-primary"
+                />
+                {d.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <label className={labelClass}>
+          Notes <span className="font-normal text-base-content/50">(shown in the Slack announce &amp; on-duty DM)</span>
+          <textarea
+            name="notes"
+            rows={4}
+            defaultValue={rotation?.notes ?? ""}
+            placeholder={"Scrum handler of the sprint\nTasks to perform:\n- handle daily standup…"}
+            className="textarea w-full mt-1"
+          />
+        </label>
 
         <button type="submit" className="btn btn-primary mt-6 w-fit">
           {submitLabel}

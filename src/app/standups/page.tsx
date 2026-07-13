@@ -86,7 +86,11 @@ export default async function StandupsPage() {
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
-                      <span className={`badge badge-sm ${status.className}`}>{status.label}</span>
+                      {s.paused ? (
+                        <span className="badge badge-sm badge-warning">⏸ Paused</span>
+                      ) : (
+                        <span className={`badge badge-sm ${status.className}`}>{status.label}</span>
+                      )}
                       <span className="text-sm text-base-content/50">
                         {s.participants.length} member{s.participants.length === 1 ? "" : "s"}
                       </span>
