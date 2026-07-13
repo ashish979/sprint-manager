@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { isAdminSession } from "@/lib/authz";
+import { canManage } from "@/lib/authz";
+import { getSession } from "@/lib/session";
 import { listUserOptions } from "@/lib/slack/directory";
 import { getStandup } from "@/lib/store/standups";
 import { STANDUP_TEMPLATES } from "@/lib/types";
@@ -18,11 +19,13 @@ export default async function EditStandupPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ template?: string }>;
 }) {
-  if (!(await isAdminSession())) redirect("/standups");
+  const session = await getSession();
+  if (!session?.user) redirect("/standups");
 
   const { id } = await params;
   const standup = await getStandup(id);
   if (!standup) notFound();
+  if (!canManage(session, standup.ownerId)) redirect(`/standups/${id}`);
 
   const [{ template }, users] = await Promise.all([searchParams, listUserOptions()]);
 

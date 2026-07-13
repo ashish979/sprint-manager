@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireAdmin } from "@/lib/authz";
+import { requireEditor, requireManage } from "@/lib/authz";
 import { advanceRotationNow } from "@/lib/rotation/engine";
 import { putOverride } from "@/lib/store/overrides";
 import { deleteRotation, getRotation, putRotation } from "@/lib/store/rotations";
@@ -46,7 +46,7 @@ function parseActiveDays(formData: FormData): number[] | undefined {
 }
 
 export async function createRotationAction(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const session = await requireEditor();
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
@@ -77,6 +77,7 @@ export async function createRotationAction(formData: FormData): Promise<void> {
     notes: String(formData.get("notes") ?? "").trim() || undefined,
     usergroupId: usergroupId || undefined,
     announceTime,
+    ownerId: session.slackUserId,
     cursor: 0,
     createdAt: now,
     updatedAt: now,
@@ -98,12 +99,11 @@ export async function createRotationAction(formData: FormData): Promise<void> {
 }
 
 export async function updateRotationAction(formData: FormData): Promise<void> {
-  await requireAdmin();
-
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("missing id");
   const existing = await getRotation(id);
   if (!existing) throw new Error(`rotation ${id} not found`);
+  await requireManage(existing.ownerId);
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
@@ -153,27 +153,27 @@ export async function updateRotationAction(formData: FormData): Promise<void> {
 }
 
 export async function deleteRotationAction(formData: FormData): Promise<void> {
-  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("missing id");
+  await requireManage((await getRotation(id))?.ownerId);
   await deleteRotation(id);
   revalidatePath("/rotations");
   redirect("/rotations");
 }
 
 export async function rotateNowAction(formData: FormData): Promise<void> {
-  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("missing id");
+  await requireManage((await getRotation(id))?.ownerId);
   await advanceRotationNow(id);
   revalidatePath(`/rotations/${id}`);
 }
 
 export async function queueOverrideAction(formData: FormData): Promise<void> {
-  await requireAdmin();
   const rotationId = String(formData.get("rotationId") ?? "");
   const date = String(formData.get("date") ?? "");
   const assignee = String(formData.get("assignee") ?? "").trim();
+  await requireManage((await getRotation(rotationId))?.ownerId);
 
   if (!rotationId || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !assignee) {
     throw new Error("rotationId, date (yyyy-mm-dd), and assignee are required");

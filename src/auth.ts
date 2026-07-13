@@ -14,7 +14,10 @@ import { getTeamSettings } from "@/lib/db";
 declare module "next-auth" {
   interface Session {
     slackUserId?: string;
+    /** Manage everything + grant roles. */
     isAdmin: boolean;
+    /** Write access: create items and manage the ones you own (admins imply this). */
+    isEditor: boolean;
     /** True for the DEV_USER synthetic session (see src/lib/session.ts). */
     isDev?: boolean;
   }
@@ -40,10 +43,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           const settings = await getTeamSettings();
           token.isAdmin = settings.adminSlackIds.includes(slackUserId);
+          token.isEditor = token.isAdmin || settings.editorSlackIds.includes(slackUserId);
         } catch (error) {
-          // Table unreachable (e.g. local dev without AWS) — default to member.
-          console.error("admin allowlist lookup failed:", error);
+          // Table unreachable (e.g. local dev without AWS) — default to viewer.
+          console.error("role allowlist lookup failed:", error);
           token.isAdmin = false;
+          token.isEditor = false;
         }
       }
       return token;
@@ -51,6 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       session.slackUserId = token.slackUserId as string | undefined;
       session.isAdmin = Boolean(token.isAdmin);
+      session.isEditor = Boolean(token.isEditor);
       return session;
     },
   },

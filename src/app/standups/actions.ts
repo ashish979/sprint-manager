@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requireAdmin } from "@/lib/authz";
+import { requireEditor, requireManage } from "@/lib/authz";
 import { resolveRemovedParticipants, sendManualReminder, startStandupNow } from "@/lib/standup/engine";
 import { deleteStandup, getStandup, putStandup } from "@/lib/store/standups";
 import { ensureUserProfile } from "@/lib/store/users";
@@ -39,7 +39,7 @@ function parseQuestions(formData: FormData): QuestionConfig[] {
 }
 
 /** Shared by createStandupAction/createAndStartStandupAction — everything up to the actual write. */
-async function buildAndSaveStandup(formData: FormData): Promise<StandupConfig> {
+async function buildAndSaveStandup(formData: FormData, ownerId?: string): Promise<StandupConfig> {
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
   const participants = parseParticipants(formData);
@@ -69,6 +69,7 @@ async function buildAndSaveStandup(formData: FormData): Promise<StandupConfig> {
     maxReminders: Number(formData.get("maxReminders")) || STANDUP_DEFAULTS.maxReminders,
     closeAtTime: String(formData.get("closeAtTime") ?? "") || STANDUP_DEFAULTS.closeAtTime,
     anonymous: formData.get("anonymous") === "on",
+    ownerId,
     createdAt: now,
     updatedAt: now,
   };
@@ -89,26 +90,25 @@ async function buildAndSaveStandup(formData: FormData): Promise<StandupConfig> {
 }
 
 export async function createStandupAction(formData: FormData): Promise<void> {
-  await requireAdmin();
-  const config = await buildAndSaveStandup(formData);
+  const session = await requireEditor();
+  const config = await buildAndSaveStandup(formData, session.slackUserId);
   redirect(`/standups/${config.id}`);
 }
 
 /** Same as createStandupAction, but immediately prompts everyone instead of waiting for the next tick. */
 export async function createAndStartStandupAction(formData: FormData): Promise<void> {
-  await requireAdmin();
-  const config = await buildAndSaveStandup(formData);
+  const session = await requireEditor();
+  const config = await buildAndSaveStandup(formData, session.slackUserId);
   await startStandupNow(config.id);
   redirect(`/standups/${config.id}`);
 }
 
 export async function updateStandupAction(formData: FormData): Promise<void> {
-  await requireAdmin();
-
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("missing id");
   const existing = await getStandup(id);
   if (!existing) throw new Error(`standup ${id} not found`);
+  await requireManage(existing.ownerId);
 
   const name = String(formData.get("name") ?? "").trim();
   const channel = String(formData.get("channel") ?? "").trim();
@@ -160,40 +160,40 @@ export async function updateStandupAction(formData: FormData): Promise<void> {
 
 /** Pause/resume: paused standups are skipped by the scheduler but keep all history. */
 export async function setStandupPausedAction(formData: FormData): Promise<void> {
-  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const paused = formData.get("paused") === "true";
   if (!id) throw new Error("missing id");
   const existing = await getStandup(id);
   if (!existing) throw new Error(`standup ${id} not found`);
+  await requireManage(existing.ownerId);
   await putStandup({ ...existing, paused, updatedAt: new Date().toISOString() });
   revalidatePath(`/standups/${id}`);
   revalidatePath("/standups");
 }
 
 export async function deleteStandupAction(formData: FormData): Promise<void> {
-  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("missing id");
+  await requireManage((await getStandup(id))?.ownerId);
   await deleteStandup(id);
   revalidatePath("/standups");
   redirect("/standups");
 }
 
 export async function startNowAction(formData: FormData): Promise<void> {
-  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("missing id");
+  await requireManage((await getStandup(id))?.ownerId);
   await startStandupNow(id);
   revalidatePath(`/standups/${id}`);
 }
 
 export async function sendReminderAction(formData: FormData): Promise<void> {
-  await requireAdmin();
   const standupId = String(formData.get("standupId") ?? "");
   const date = String(formData.get("date") ?? "");
   const userId = String(formData.get("userId") ?? "");
   if (!standupId || !date || !userId) throw new Error("missing standupId/date/userId");
+  await requireManage((await getStandup(standupId))?.ownerId);
   await sendManualReminder(standupId, date, userId);
   revalidatePath(`/standups/${standupId}`);
 }

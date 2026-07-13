@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { isAdminSession } from "@/lib/authz";
+import { isEditorSession } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { ensureChannelInfo } from "@/lib/store/channels";
 import { getDay } from "@/lib/store/reports";
@@ -33,7 +33,7 @@ export default async function StandupsPage() {
     );
   }
 
-  const [standups, admin] = await Promise.all([listStandups(), isAdminSession()]);
+  const [standups, canCreate] = await Promise.all([listStandups(), isEditorSession()]);
 
   // Several standups can share a channel — look each unique id up once.
   const uniqueChannelIds = [...new Set(standups.map((s) => s.channel))];
@@ -53,7 +53,7 @@ export default async function StandupsPage() {
           <h1 className="text-2xl font-bold">Standups</h1>
           <p className="text-sm text-base-content/50">Async daily check-ins in Slack.</p>
         </div>
-        {admin && (
+        {canCreate && (
           <Link href="/standups/new" className="btn btn-primary btn-sm">
             + New standup
           </Link>
@@ -62,7 +62,7 @@ export default async function StandupsPage() {
 
       {standups.length === 0 ? (
         <div className="mt-8 rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center text-base-content/60">
-          No standups yet{admin ? " — create the first one." : "."}
+          No standups yet{canCreate ? " — create the first one." : "."}
         </div>
       ) : (
         <ul className="mt-6 space-y-3">

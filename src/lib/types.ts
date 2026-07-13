@@ -36,6 +36,8 @@ export interface StandupConfig {
    * alternative to deleting. Manual "Start now" still works.
    */
   paused?: boolean;
+  /** Slack id of the creator; they (and admins) may manage this standup. */
+  ownerId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -176,6 +178,8 @@ export interface RotationConfig {
    * increments. A shift due today won't actually fire until this time.
    */
   announceTime?: string;
+  /** Slack id of the creator; they (and admins) may manage this rotation. */
+  ownerId?: string;
   createdAt: string;
   updatedAt: string;
 }

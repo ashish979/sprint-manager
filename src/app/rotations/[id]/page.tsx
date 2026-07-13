@@ -5,7 +5,7 @@ import { ConfirmSubmitButton } from "@/app/_components/confirm-submit-button";
 import { DateField } from "@/app/_components/date-time-fields";
 import { ParticipantPicker } from "@/app/_components/participant-picker";
 import { SubmitButton } from "@/app/_components/submit-button";
-import { isAdminSession } from "@/lib/authz";
+import { canManage } from "@/lib/authz";
 import { getSession } from "@/lib/session";
 import { listUserOptions } from "@/lib/slack/directory";
 import { ensureChannelInfo } from "@/lib/store/channels";
@@ -41,13 +41,13 @@ export default async function RotationDetailPage({
   const rotation = await getRotation(id);
   if (!rotation) notFound();
 
-  const [admin, current, history, channelInfo, users] = await Promise.all([
-    isAdminSession(),
+  const [current, history, channelInfo, users] = await Promise.all([
     getLatestShift(rotation.id),
     listShifts(rotation.id),
     ensureChannelInfo(rotation.channel),
     listUserOptions(),
   ]);
+  const admin = canManage(session, rotation.ownerId);
   const profiles = await Promise.all(rotation.members.map((u) => getUserProfile(u)));
   const nameOf = (userId: string) => profiles.find((p) => p?.userId === userId)?.name ?? userId;
   const nextIndex = rotation.cursor % rotation.members.length;
