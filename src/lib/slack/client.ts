@@ -127,6 +127,15 @@ export const slack = {
     });
   },
 
+  /** Ephemeral reply via response_url — visible only to the clicking user, leaves the message intact. */
+  async ephemeral(responseUrl: string, text: string): Promise<void> {
+    await fetch(responseUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ response_type: "ephemeral", replace_original: false, text }),
+    });
+  },
+
   /** Points a user group at exactly these members (comma list, not JSON). */
   async usergroupsUsersUpdate(usergroup: string, users: string[]): Promise<void> {
     await call("usergroups.users.update", { usergroup, users: users.join(",") });

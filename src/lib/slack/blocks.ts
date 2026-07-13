@@ -337,6 +337,131 @@ function notesBlocks(rotation: Pick<RotationConfig, "notes">): unknown[] {
   return [{ type: "section", text: { type: "mrkdwn", text: `*Notes:*\n${notes.slice(0, 2900)}` } }];
 }
 
+/**
+ * "Manage Queue" button + "Quick Actions" menu on the announce, so the queue
+ * can be managed from Slack without opening the dashboard. Each carries the
+ * rotation id; the quick menu's options also carry the op to perform.
+ */
+function rotationActions(rotationId: string): unknown {
+  const rotation = JSON.stringify({ rotationId });
+  return {
+    type: "actions",
+    elements: [
+      {
+        type: "button",
+        action_id: "rotation:manage",
+        text: { type: "plain_text", text: "⚙️ Manage Queue" },
+        value: rotation,
+      },
+      {
+        type: "static_select",
+        action_id: "rotation:quick",
+        placeholder: { type: "plain_text", text: "Quick Actions" },
+        options: [
+          {
+            text: { type: "plain_text", text: "➡️ Pass to next person" },
+            value: JSON.stringify({ rotationId, op: "pass_next" }),
+          },
+          {
+            text: { type: "plain_text", text: "🙋 I'll take it (assign to me)" },
+            value: JSON.stringify({ rotationId, op: "take" }),
+          },
+        ],
+      },
+    ],
+  };
+}
+
+/**
+ * Modal to manage a rotation's queue from Slack: reassign today's on-duty
+ * person and/or set who's up next. `names` maps member id → display name.
+ */
+export function manageQueueModal(
+  rotation: RotationConfig,
+  names: Map<string, string>,
+  date: string,
+  current: string | undefined,
+  next: string,
+): unknown {
+  const nameOf = (id: string) => names.get(id) ?? id;
+  const memberOptions = rotation.members.map((id) => ({
+    text: { type: "plain_text", text: nameOf(id).slice(0, 75) },
+    value: id,
+  }));
+  return {
+    type: "modal",
+    callback_id: "rotation:manage:submit",
+    private_metadata: JSON.stringify({ rotationId: rotation.id, date }),
+    title: { type: "plain_text", text: rotation.name.slice(0, 24) || "Rotation" },
+    submit: { type: "plain_text", text: "Save" },
+    close: { type: "plain_text", text: "Cancel" },
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `*On duty:* ${current ? mention(current) : "_nobody yet_"}\n*Up next:* ${mention(next)}`,
+        },
+      },
+      { type: "divider" },
+      {
+        type: "input",
+        optional: true,
+        block_id: "reassign",
+        label: { type: "plain_text", text: "Reassign today's shift to" },
+        element: {
+          type: "static_select",
+          action_id: "assignee",
+          placeholder: { type: "plain_text", text: "Choose a member" },
+          options: memberOptions,
+        },
+      },
+      {
+        type: "input",
+        optional: true,
+        block_id: "next_up",
+        label: { type: "plain_text", text: "Set who's up next" },
+        element: {
+          type: "static_select",
+          action_id: "member",
+          placeholder: { type: "plain_text", text: "Choose a member" },
+          options: memberOptions,
+        },
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: "Reassigning changes today's on-duty person; “up next” only affects the next rotation and keeps the round-robin order.",
+          },
+        ],
+      },
+    ],
+  };
+}
+
+/** Channel note when today's on-duty person is reassigned from Slack. */
+export function reassignAnnounceMessage(
+  rotation: Pick<RotationConfig, "name">,
+  assignee: string,
+  byUserId: string,
+): { text: string; blocks: unknown[] } {
+  const text = `${rotation.name}: ${mention(assignee)} is now on duty (reassigned by ${mention(byUserId)})`;
+  return {
+    text,
+    blocks: [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `🔁 *${rotation.name}* — ${mention(assignee)} is now on duty.\n_Reassigned by ${mention(byUserId)}._`,
+        },
+      },
+    ],
+  };
+}
+
 export function shiftAnnounceMessage(
   rotation: RotationConfig,
   assignee: string,
@@ -353,6 +478,7 @@ export function shiftAnnounceMessage(
         },
       },
       ...notesBlocks(rotation),
+      rotationActions(rotation.id),
       {
         type: "context",
         elements: [

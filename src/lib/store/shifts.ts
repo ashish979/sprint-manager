@@ -46,6 +46,16 @@ export async function createShiftIfAbsent(shift: Shift): Promise<boolean> {
   }
 }
 
+/** Overwrite a shift (used when reassigning today's on-duty person from Slack). */
+export async function putShift(shift: Shift): Promise<void> {
+  await db.send(
+    new PutCommand({
+      TableName: env.tableName,
+      Item: { ...shiftKey(shift.rotationId, shift.startDate), ...shift },
+    }),
+  );
+}
+
 /** Most recent shift by startDate, or undefined if the rotation has never fired. */
 export async function getLatestShift(rotationId: string): Promise<Shift | undefined> {
   const res = await db.send(
