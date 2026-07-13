@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { SubmitButton } from "@/app/_components/submit-button";
 import { getSession } from "@/lib/session";
 import { getUserProfile } from "@/lib/store/users";
 
@@ -57,7 +58,9 @@ export default async function PreferencesPage({
               className={inputClass}
             />
           </label>
-          <button className="btn btn-primary btn-sm mt-3 w-fit">Save</button>
+          <SubmitButton className="btn btn-primary btn-sm mt-3 w-fit" pendingText="Saving…">
+            Save
+          </SubmitButton>
         </form>
       </div>
 
@@ -86,11 +89,13 @@ export default async function PreferencesPage({
                 className={inputClass}
               />
             </label>
-            <button className="btn btn-primary btn-sm mt-3 w-fit">Set out-of-office</button>
+            <SubmitButton className="btn btn-primary btn-sm mt-3 w-fit" pendingText="Saving…">
+              Set out-of-office
+            </SubmitButton>
           </form>
           {profile?.outOfOffice && (
             <form action={clearOutOfOfficeAction} className="mt-2">
-              <button className="btn btn-ghost btn-sm">Clear out-of-office</button>
+              <SubmitButton className="btn btn-ghost btn-sm">Clear out-of-office</SubmitButton>
             </form>
           )}
         </div>

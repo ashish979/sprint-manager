@@ -4,6 +4,7 @@ import { signOut } from "@/auth";
 import { getSession } from "@/lib/session";
 
 import { Logo } from "./logo";
+import { SubmitButton } from "./submit-button";
 
 /** Persistent top nav — every signed-in page links to every other page. */
 export async function Nav() {
@@ -35,7 +36,9 @@ export async function Nav() {
               await signOut();
             }}
           >
-            <button className="btn btn-ghost btn-sm text-base-content/60">Sign out</button>
+            <SubmitButton className="btn btn-ghost btn-sm text-base-content/60">
+              Sign out
+            </SubmitButton>
           </form>
         )}
       </nav>

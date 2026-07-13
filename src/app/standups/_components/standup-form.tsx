@@ -1,4 +1,5 @@
 import { ParticipantPicker } from "@/app/_components/participant-picker";
+import { SubmitButton } from "@/app/_components/submit-button";
 import type { UserOption } from "@/lib/slack/directory";
 import { DEFAULT_QUESTIONS, STANDUP_DEFAULTS, STANDUP_TEMPLATES, type StandupConfig } from "@/lib/types";
 
@@ -213,13 +214,13 @@ export function StandupForm({
       </section>
 
       <div className="flex gap-3 pt-2">
-        <button type="submit" className="btn btn-primary">
+        <SubmitButton className="btn btn-primary" pendingText="Saving…">
           {submitLabel}
-        </button>
+        </SubmitButton>
         {secondaryAction && (
-          <button type="submit" formAction={secondaryAction} className="btn btn-outline">
+          <SubmitButton className="btn btn-outline" formAction={secondaryAction}>
             {secondaryLabel}
-          </button>
+          </SubmitButton>
         )}
       </div>
     </form>
