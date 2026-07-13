@@ -1,8 +1,8 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
-/* Single light theme — Geekbot-style: soft gray page, white cards, a friendly
-   violet primary. Light only (the app is a daytime admin dashboard). */
+/* Single light theme — clean, Josys-branded: soft gray page, white cards, the
+   Josys orange as primary. Light only (the app is a daytime admin dashboard). */
 @plugin "daisyui/theme" {
   name: "sprint";
   default: true;
@@ -10,15 +10,15 @@
   color-scheme: light;
 
   --color-base-100: #ffffff;
-  --color-base-200: #f5f6f8;
-  --color-base-300: #e7e9ee;
-  --color-base-content: #1d2333;
+  --color-base-200: #f6f6f7;
+  --color-base-300: #e8e8ea;
+  --color-base-content: #23201d;
 
-  --color-primary: #5b4ef0;
+  --color-primary: #f5641e;
   --color-primary-content: #ffffff;
-  --color-secondary: #10b6a4;
+  --color-secondary: #1f2937;
   --color-secondary-content: #ffffff;
-  --color-accent: #f59e0b;
+  --color-accent: #0ea5a3;
   --color-accent-content: #ffffff;
   --color-neutral: #2b3142;
   --color-neutral-content: #ffffff;
