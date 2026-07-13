@@ -8,7 +8,7 @@ import {
 import { slack } from "@/lib/slack/client";
 import { deleteOverride, getOverride } from "@/lib/store/overrides";
 import { getRotation, listRotations, putRotation } from "@/lib/store/rotations";
-import { createShiftIfAbsent, getLatestShift, putShift } from "@/lib/store/shifts";
+import { createShiftIfAbsent, getLatestShift, getShift, putShift } from "@/lib/store/shifts";
 import { getUserProfile } from "@/lib/store/users";
 import { localParts, todayIst } from "@/lib/tz";
 import { ROTATION_DEFAULTS, type RotationConfig } from "@/lib/types";
@@ -109,14 +109,39 @@ async function notifyOnDuty(
 }
 
 /**
- * Admin "rotate now" — forces today's shift regardless of the cadence
- * schedule (e.g. the on-duty person is out sick). No-ops if today's shift
- * already exists.
+ * Admin "rotate now" — advances the rotation one step immediately, regardless
+ * of the cadence schedule. If today has no shift yet it's the normal roll-over
+ * (assign members[cursor], announce, advance the cursor). If today already
+ * rotated it force-advances to the *next* member and re-announces, so the
+ * button always does something visible instead of silently no-opping (the
+ * tick's own idempotency, in `rotate`, is left untouched).
  */
 export async function advanceRotationNow(rotationId: string): Promise<void> {
   const rotation = await getRotation(rotationId);
   if (!rotation) throw new Error(`rotation ${rotationId} not found`);
-  await rotate(rotation, todayIst(new Date()));
+
+  const today = todayIst(new Date());
+  const existing = await getShift(rotationId, today);
+  if (!existing) {
+    await rotate(rotation, today);
+    return;
+  }
+
+  // Today already rotated — force the round-robin forward to the next member.
+  const assignee = rotation.members[rotation.cursor % rotation.members.length];
+  await putShift({
+    rotationId,
+    startDate: today,
+    assignee,
+    source: "auto",
+    createdAt: existing.createdAt,
+  });
+  await putRotation({
+    ...rotation,
+    cursor: rotation.cursor + 1,
+    updatedAt: new Date().toISOString(),
+  });
+  await notifyOnDuty(rotation, assignee, today, shiftAnnounceMessage(rotation, assignee, today));
 }
 
 // --- Slack-native queue management (Manage Queue button + Quick Actions) ---
